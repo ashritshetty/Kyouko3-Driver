@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
   
   kyouko3.u_control_base = mmap(0, KYOUKO3_CONTROL_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
   ret = U_READ_REG(DEVICE_RAM);
-  printf("Ram size in MB is: %d \n", ret);
+  printf("[USER] Ram size in MB is: %d \n", ret);
 
   printf("[USER] Closing device : %s\n", DEVICE_FILE_NAME);
   close(fd);
