@@ -22,8 +22,8 @@ MODULE_AUTHOR("Clemson Tigers");
 struct kyouko3 {
   unsigned long p_control_base;
   unsigned long p_ram_card_base;
-  uint *k_control_base;
-  uint *k_ram_card_base;
+  unsigned int *k_control_base;
+  unsigned int *k_ram_card_base;
   struct pci_dev *kyouko3_pci_dev;
 }kyouko3;
 
@@ -50,9 +50,12 @@ void K_WRITE_REG(unsigned int reg, unsigned int value)
 int kyouko3_open(struct inode *inode, struct file *fp)
 {
   unsigned int RAM_SIZE;
+  
+  kyouko3.k_control_base = ioremap(kyouko3.p_control_base, CONTROL_SIZE);
+  
   RAM_SIZE = K_READ_REG(DEVICE_RAM);
   RAM_SIZE = RAM_SIZE*1024*1024;
-  kyouko3.k_control_base = ioremap(kyouko3.p_control_base, CONTROL_SIZE);
+
   kyouko3.k_ram_card_base = ioremap(kyouko3.p_ram_card_base, RAM_SIZE);
   printk(KERN_ALERT "[KERNEL] Successfully opened device\n");
   return 0;
