@@ -8,27 +8,61 @@
 #include <linux/mm.h>
 #include <asm/io.h>
 #include <linux/delay.h>
+#include <linux/sched.h>
+#include <kyouko3def.h>
 
 #define KYOUKO_MAJOR 500
 #define KYOUKO_MINOR 127
-#define PCI_VENDOR_ID_CCORSI 0x1234
-#define PCI_DEVICE_ID_CCORSI_KYOUKO3 0x1113
-#define DEVICE_RAM 0x0020
-#define CONTROL_SIZE 65536
 
-//Define offsets for FiFo Start and End => H/w start and end
-#define FIFO_START 0x1020
-#define FIFO_END 0x1024
+#define CONTROL_SIZE 65536
 
 //Define FIFO_ENTRIES as there are 1024 according to notes
 #define FIFO_ENTRIES 1024
 
 //Defines to keep track of graphic and DMA on/off
-#define GRAPHICS_ON 0
-#define DMA_MAPPED 0
+#define GRAPHICS_ON 1
+#define GRAPHICS_OFF 0
+
+#define CONFIG_ACC_MASK 0x40000000
+#define CONFIG_MODE_SET_VAL 0
+#define FIFO_CLEAR_BUF_VAL 0x03
+#define FIFO_FLUSH_REG_VAL 0x0
+const float COLOR_PURPLE = 0.669998
 
 MODULE_LICENSE("Proprietary");
 MODULE_AUTHOR("Clemson Tigers");
+
+struct kyouko3_frame{
+  unsigned int cols;
+  unsigned int rows;
+  unsigned int rowPitch;
+  unsigned int pixFormat;
+  unsigned int startAddr;
+}kyouko3_frame;
+
+struct kyouko3_frame frame = {
+  .cols = 1024,
+  .rows = 768,
+  .rowPitch = 1024*4,
+  .pixFormat = 0xf888,
+  .startAddr = 0
+};
+
+struct kyouko3_encoder{
+    unsigned int width;
+    unsigned int height;
+    unsigned int offsetX;
+    unsigned int offsetY;
+    unsigned int frame;
+}kyouko3_encoder;
+
+struct kyouko3_encoder encoder = {
+    .width = 1024,
+    .height = 768,
+    .offsetX = 0,
+    .offsetY = 0,
+    .frame = 0
+};
 
 struct fifo_entry{
     unsigned int cmd;
@@ -45,6 +79,10 @@ struct fifo{
 struct kyouko3 {
   unsigned long p_control_base;
   unsigned long p_ram_card_base;
+  
+  unsigned int graphics_on;
+  unsigned int dma_mapped;
+  
   unsigned int *k_control_base;
   unsigned int *k_ram_card_base;
   struct pci_dev *kyouko3_pci_dev;
@@ -102,8 +140,9 @@ int kyouko3_open(struct inode *inode, struct file *fp)
   kyouko3.kyouko3_fifo.head = 0;
   kyouko3.kyouko3_fifo.tail_cache = 0;
   
-  //TODO: Not handled graphics and DMA flags
-  
+  kyouko3.graphics_on = 0;
+  kyouko3.dma_mapped = 0;
+    
   printk(KERN_ALERT "[KERNEL] Successfully opened device\n");
   return 0;
 }
@@ -143,6 +182,79 @@ void kyouko3_remove(struct pci_dev *pci_dev)
   pci_clear_master(pci_dev);
 }
 
+void kyouko3_fifo_flush()
+{
+  K_WRITE_REG(FIFO_HEAD, kyouko3.kyouko3_fifo.head);
+  while(kyouko3.kyouko3_fifo.tail_cache != kyouko3.kyouko3_fifo.head)
+  {
+    kyouko3.kyouko3_fifo.tail_cache = K_READ_REG(FIFO_TAIL);
+    schedule();
+  }
+}
+
+void kyouko3_vmode()
+{
+    //set Frame 0
+    K_WRITE_REG(FRAME_COL, frame.cols);
+    K_WRITE_REG(FRAME_ROW, frame.rows);
+    K_WRITE_REG(FRAME_RPITCH, frame.rowPitch);
+    K_WRITE_REG(FRAME_PIXFORMAT, frame.pixFormat);
+    K_WRITE_REG(FRAME_STARTADDR, frame.startAddr);
+    
+    //TODO: recheck abt bit mask? 
+    //set accelaration bit mask
+    K_WRITE_REG(CONFIG_ACC, CONFIG_ACC_MASK);
+    
+    //set DAC/encoder
+    K_WRITE_REG(ENC_WIDTH, encoder.width);
+    K_WRITE_REG(ENC_HEIGHT, encoder.height);
+    K_WRITE_REG(ENC_OFFSETX, encoder.offsetX);
+    K_WRITE_REG(ENC_OFFSETY, encoder.offsetY);
+    K_WRITE_REG(ENC_FRAME, encoder.frame);
+    
+    //write 0 to mode set register
+    K_WRITE_REG(CONFIG_MODE_SET, CONFIG_MODE_SET_VAL);
+    
+    //msleep(n)
+    msleep(10);
+    
+    //load clear color register using FIFO_WRITE
+    FIFO_WRITE(CLEAR_COLOR, *(unsigned int *)&COLOR_PURPLE);
+    
+    //FIFO_WRITE 0x03 to clear buffer register
+    FIFO_WRITE(FIFO_CLEAR_BUF, FIFO_CLEAR_BUF_VAL);
+    
+    //FIFO_WRITE 0x0 to flush register
+    FIFO_WRITE(FIFO_FLUSH_REG, FIFO_FLUSH_REG_VAL);
+    
+    kyouko3_fifo_flush();
+    kyouko3.graphics_on = 1;
+}
+
+void kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+{
+  int ret;
+  //TODO: Double check for macro value of FIFO_QUEUE, etc.
+  switch(cmd){
+      case FIFO_QUEUE:
+        struct fifo_entry entry;
+        ret = copy_from_user(&entry, (struct fifo_entry*)arg, sizeof(struct fifo_entry));
+        FIFO_WRITE(entry.cmd, entry.value);
+        break;
+      
+      case FIFO_FLUSH:
+        kyouko3_fifo_flush();
+        break;
+        
+      case VMODE:
+        if((int)arg == GRAPHICS_ON)
+        {
+          kyouko3_vmode();
+        }
+        break;
+  }
+}
+
 struct pci_driver kyouko3_pci_drv = {
   .name = "KYOUKO3",
   .id_table = kyouko3_dev_ids,
@@ -154,6 +266,7 @@ struct file_operations kyouko3_fops = {
   .open = kyouko3_open,
   .release = kyouko3_release,
   .mmap = kyouko3_mmap,
+  .ioctl = kyouko3_ioctl,
   .owner = THIS_MODULE
 };
 
