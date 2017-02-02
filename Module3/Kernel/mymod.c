@@ -95,7 +95,7 @@ int kyouko3_open(struct inode *inode, struct file *fp)
 
   kyouko3.k_ram_card_base = ioremap(kyouko3.p_ram_card_base, RAM_SIZE);
   
-  kyouko3.kyouko3_fifo.k_base = pci_alloc_consistent(kyouko3.pci_dev, 8192u, &kyouko3.kyouko3_fifo.p_base);
+  kyouko3.kyouko3_fifo.k_base = pci_alloc_consistent(kyouko3.kyouko3_pci_dev, 8192u, &kyouko3.kyouko3_fifo.p_base);
   K_WRITE_REG(FIFO_START, kyouko3.kyouko3_fifo.p_base);
   K_WRITE_REG(FIFO_END, kyouko3.kyouko3_fifo.p_base + 8192u);
   
@@ -110,7 +110,7 @@ int kyouko3_open(struct inode *inode, struct file *fp)
 
 int kyouko3_release(struct inode *inode, struct file *fp)
 {
-  pci_free_consistent(kyouko3.pci_dev, 8192u, kyouko3.kyouko3_fifo.k_base, kyouko3.kyouko3_fifo.p_base);  
+  pci_free_consistent(kyouko3.kyouko3_pci_dev, 8192u, kyouko3.kyouko3_fifo.k_base, kyouko3.kyouko3_fifo.p_base);  
   
   iounmap(kyouko3.k_ram_card_base);  
   iounmap(kyouko3.k_control_base);
