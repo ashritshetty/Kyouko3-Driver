@@ -36,7 +36,7 @@ struct fifo_entry{
 }fifo_entry;
 
 struct fifo{
-    unsigned long p_base;
+    dma_addr_t p_base;
     struct fifo_entry *k_base;
     unsigned int head;
     unsigned int tail_cache;
