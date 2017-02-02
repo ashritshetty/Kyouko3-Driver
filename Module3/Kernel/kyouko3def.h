@@ -33,4 +33,11 @@
 #define FIFO_CLEAR_BUF 0x3008
 #define FIFO_FLUSH_REG 0x3ffc
 
+#define VMODE _IOW(0xcc, 0, unsigned long)
+#define BIND_DMA _IOW(0xcc, 1, unsigned long)
+#define START_DMA _IOWR(0xcc, 2, unsigned long)
+#define FIFO_QUEUE _IOWR(0xcc, 3, unsigned long)
+#define FIFO_FLUSH _IO(0xcc, 4, unsigned long)
+#define UNBIND_DMA _IOW(0xcc, 5, unsigned long)
+
 #endif //KYOUKO3_DEFINES_HEADER

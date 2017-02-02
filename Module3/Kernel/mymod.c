@@ -19,7 +19,7 @@
 //Define FIFO_ENTRIES as there are 1024 according to notes
 #define FIFO_ENTRIES 1024
 
-//Defines to keep track of graphic and DMA on/off
+//Defines to keep track of graphic on/off
 #define GRAPHICS_ON 1
 #define GRAPHICS_OFF 0
 
