@@ -11,6 +11,9 @@
 #include <linux/sched.h>
 #include <kyouko3def.h>
 
+MODULE_LICENSE("Proprietary");
+MODULE_AUTHOR("Clemson Tigers");
+
 #define KYOUKO_MAJOR 500
 #define KYOUKO_MINOR 127
 
@@ -27,10 +30,7 @@
 #define CONFIG_MODE_SET_VAL 0
 #define FIFO_CLEAR_BUF_VAL 0x03
 #define FIFO_FLUSH_REG_VAL 0x0
-const float COLOR_PURPLE = 0.669998
-
-MODULE_LICENSE("Proprietary");
-MODULE_AUTHOR("Clemson Tigers");
+const float COLOR_PURPLE = 0.669998;
 
 struct kyouko3_frame{
   unsigned int cols;
@@ -182,7 +182,7 @@ void kyouko3_remove(struct pci_dev *pci_dev)
   pci_clear_master(pci_dev);
 }
 
-void kyouko3_fifo_flush()
+void kyouko3_fifo_flush(void)
 {
   K_WRITE_REG(FIFO_HEAD, kyouko3.kyouko3_fifo.head);
   while(kyouko3.kyouko3_fifo.tail_cache != kyouko3.kyouko3_fifo.head)
@@ -192,7 +192,7 @@ void kyouko3_fifo_flush()
   }
 }
 
-void kyouko3_vmode()
+void kyouko3_vmode(void)
 {
     //set Frame 0
     K_WRITE_REG(FRAME_COL, frame.cols);
@@ -231,13 +231,11 @@ void kyouko3_vmode()
     kyouko3.graphics_on = 1;
 }
 
-void kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 {
   int ret;
-  //TODO: Double check for macro value of FIFO_QUEUE, etc.
-  switch(cmd){
+  struct fifo_entry entry;  switch(cmd){
       case FIFO_QUEUE:
-        struct fifo_entry entry;
         ret = copy_from_user(&entry, (struct fifo_entry*)arg, sizeof(struct fifo_entry));
         FIFO_WRITE(entry.cmd, entry.value);
         break;
@@ -253,6 +251,7 @@ void kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
         }
         break;
   }
+  return 0;
 }
 
 struct pci_driver kyouko3_pci_drv = {
@@ -266,7 +265,7 @@ struct file_operations kyouko3_fops = {
   .open = kyouko3_open,
   .release = kyouko3_release,
   .mmap = kyouko3_mmap,
-  .ioctl = kyouko3_ioctl,
+  .unlocked_ioctl = kyouko3_ioctl,
   .owner = THIS_MODULE
 };
 

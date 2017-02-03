@@ -1,6 +1,8 @@
 #ifndef KYOUKO3_DEFINES_HEADER
 #define KYOUKO3_DEFINES_HEADER
 
+#include <linux/ioctl.h>
+
 #define PCI_VENDOR_ID_CCORSI 0x1234
 #define PCI_DEVICE_ID_CCORSI_KYOUKO3 0x1113
 #define DEVICE_RAM 0x0020
@@ -37,7 +39,7 @@
 #define BIND_DMA _IOW(0xcc, 1, unsigned long)
 #define START_DMA _IOWR(0xcc, 2, unsigned long)
 #define FIFO_QUEUE _IOWR(0xcc, 3, unsigned long)
-#define FIFO_FLUSH _IO(0xcc, 4, unsigned long)
+#define FIFO_FLUSH _IO(0xcc, 4)
 #define UNBIND_DMA _IOW(0xcc, 5, unsigned long)
 
 #endif //KYOUKO3_DEFINES_HEADER
