@@ -159,10 +159,23 @@ int kyouko3_release(struct inode *inode, struct file *fp)
   return 0;
 }
 
+#define CONTROL_OFF 0
+#define FB_OFF 0x80000000
 int kyouko3_mmap(struct file *fp, struct vm_area_struct *vma)
 {
-  int ret;
-  ret = io_remap_pfn_range(vma, vma->vm_start, kyouko3.p_control_base>>PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot);
+  int ret = -1;
+  unsigned int offset = vma->vm_pgoff << PAGE_SHIFT;
+  printk(KERN_ALERT "[KERNEL] %u\n", offset);
+  switch(offset){
+    case CONTROL_OFF:
+      ret = io_remap_pfn_range(vma, vma->vm_start, kyouko3.p_control_base>>PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot);
+      printk(KERN_ALERT "[KERNEL] Control region mapped \n");
+      break;
+    case FB_OFF:
+      ret = io_remap_pfn_range(vma, vma->vm_start, kyouko3.p_ram_card_base>>PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot);
+      printk(KERN_ALERT "[KERNEL] Frame buffer mapped \n");
+      break;
+  }
   return ret;
 }
 
@@ -195,7 +208,7 @@ void kyouko3_fifo_flush(void)
 
 void kyouko3_vmode(void)
 {
-    float red = 0.0;
+    float red = 1.0;
     float blue = 1.0;
     float green = 1.0;
     float alpha = 0.0;
@@ -263,7 +276,8 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
           kyouko3_fifo_flush();
           K_WRITE_REG(CONFIG_ACC, CONFIG_ACC_DEF);
           K_WRITE_REG(CONFIG_MODE_SET, CONFIG_MODE_SET_VAL);
-          kyouko3.graphics_on = 0;    
+          kyouko3.graphics_on = 0;
+          msleep(10);    
         }
         break;
   }

@@ -73,9 +73,9 @@ int main(int argc, char *argv[])
 
   ioctl(fd, VMODE, GRAPHICS_ON);
   
-  for(i = 200*1024; i < 201*1024; i++)
+  for(i = 220*1024; i < 221*1024; i++)
   {
-      U_WRITE_FB(i, 0xff000000);
+      U_WRITE_FB(i, 0x00ff0000);
   }
   
   ioctl(fd, FIFO_QUEUE, &entry);
