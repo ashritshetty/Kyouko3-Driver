@@ -41,7 +41,7 @@ unsigned int U_READ_REG(unsigned int reg)
 
 void U_WRITE_FB(unsigned int reg, unsigned int value)
 {
-  *(kyouko3.u_frame_buffer+(reg>>2)) = value;
+  *(kyouko3.u_frame_buffer+(reg)) = value;
 }
 
 int main(int argc, char *argv[])
@@ -64,11 +64,13 @@ int main(int argc, char *argv[])
   kyouko3.u_control_base = mmap(0, KYOUKO3_CONTROL_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
   
   RAM_SIZE = U_READ_REG(DEVICE_RAM);
-  printf("[USER] Ram size in MB is: %d \n", ret);
+  printf("[USER] Ram size in MB is: %d \n", RAM_SIZE);
   
   RAM_SIZE = RAM_SIZE*1024*1024;
-  kyouko3.u_frame_buffer = mmap(0, RAM_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x8000);
-  
+  kyouko3.u_frame_buffer = mmap(0, RAM_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x80000000);
+
+  printf("Virtual address: %p", kyouko3.u_frame_buffer);  
+
   ioctl(fd, VMODE, GRAPHICS_ON);
   
   for(i = 200*1024; i < 201*1024; i++)
@@ -79,7 +81,7 @@ int main(int argc, char *argv[])
   ioctl(fd, FIFO_QUEUE, &entry);
   ioctl(fd, FIFO_FLUSH, 0);
   
-  usleep(1);
+  sleep(10);
   
   ioctl(fd, VMODE, GRAPHICS_OFF);
   

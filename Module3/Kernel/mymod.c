@@ -9,7 +9,7 @@
 #include <asm/io.h>
 #include <linux/delay.h>
 #include <linux/sched.h>
-#include <kyouko3def.h>
+#include "kyouko3def.h"
 
 MODULE_LICENSE("Proprietary");
 MODULE_AUTHOR("Clemson Tigers");
@@ -26,6 +26,7 @@ MODULE_AUTHOR("Clemson Tigers");
 #define GRAPHICS_ON 1
 #define GRAPHICS_OFF 0
 
+#define CONFIG_ACC_DEF 0x80000000
 #define CONFIG_ACC_MASK 0x40000000
 #define CONFIG_MODE_SET_VAL 0
 #define FIFO_CLEAR_BUF_VAL 0x03
@@ -194,6 +195,10 @@ void kyouko3_fifo_flush(void)
 
 void kyouko3_vmode(void)
 {
+    float red = 0.0;
+    float blue = 1.0;
+    float green = 1.0;
+    float alpha = 0.0;
     //set Frame 0
     K_WRITE_REG(FRAME_COL, frame.cols);
     K_WRITE_REG(FRAME_ROW, frame.rows);
@@ -219,8 +224,11 @@ void kyouko3_vmode(void)
     msleep(10);
     
     //load clear color register using FIFO_WRITE
-    FIFO_WRITE(CLEAR_COLOR, *(unsigned int *)&COLOR_PURPLE);
-    
+    FIFO_WRITE(CLEAR_COLOR, *(unsigned int *)&red);
+    FIFO_WRITE(CLEAR_COLOR+0x0004, *(unsigned int *)&green);
+    FIFO_WRITE(CLEAR_COLOR+0x0008, *(unsigned int *)&blue);
+    FIFO_WRITE(CLEAR_COLOR+0x000c, *(unsigned int *)&alpha);
+
     //FIFO_WRITE 0x03 to clear buffer register
     FIFO_WRITE(FIFO_CLEAR_BUF, FIFO_CLEAR_BUF_VAL);
     
@@ -237,6 +245,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
   struct fifo_entry entry;  switch(cmd){
       case FIFO_QUEUE:
         ret = copy_from_user(&entry, (struct fifo_entry*)arg, sizeof(struct fifo_entry));
+        printk(KERN_ALERT "[KERNEL] entry.cmd %d entry.value %d \n", entry.cmd, entry.value);
         FIFO_WRITE(entry.cmd, entry.value);
         break;
       
@@ -248,6 +257,13 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
         if((int)arg == GRAPHICS_ON)
         {
           kyouko3_vmode();
+        }
+        else if((int)arg == GRAPHICS_OFF)
+        {
+          kyouko3_fifo_flush();
+          K_WRITE_REG(CONFIG_ACC, CONFIG_ACC_DEF);
+          K_WRITE_REG(CONFIG_MODE_SET, CONFIG_MODE_SET_VAL);
+          kyouko3.graphics_on = 0;    
         }
         break;
   }

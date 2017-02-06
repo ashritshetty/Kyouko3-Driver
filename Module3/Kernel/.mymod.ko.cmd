@@ -1,0 +1,1 @@
+cmd_/root/ashrit/Kyouko3-Driver/Module3/Kernel/mymod.ko := ld -r -m elf_x86_64 -T /usr/src/kernels/3.10.0-327.el7.x86_64/scripts/module-common.lds --build-id  -o /root/ashrit/Kyouko3-Driver/Module3/Kernel/mymod.ko /root/ashrit/Kyouko3-Driver/Module3/Kernel/mymod.o /root/ashrit/Kyouko3-Driver/Module3/Kernel/mymod.mod.o
