@@ -69,8 +69,6 @@ int main(int argc, char *argv[])
   RAM_SIZE = RAM_SIZE*1024*1024;
   kyouko3.u_frame_buffer = mmap(0, RAM_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x80000000);
 
-  printf("Virtual address: %p", kyouko3.u_frame_buffer);  
-
   ioctl(fd, VMODE, GRAPHICS_ON);
   
   for(i = 220*1024; i < 221*1024; i++)
