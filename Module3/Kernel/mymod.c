@@ -31,7 +31,9 @@ MODULE_AUTHOR("Clemson Tigers");
 #define CONFIG_MODE_SET_VAL 0
 #define FIFO_CLEAR_BUF_VAL 0x03
 #define FIFO_FLUSH_REG_VAL 0x0
-const float COLOR_PURPLE = 0.669998;
+
+#define CONTROL_OFF 0
+#define FB_OFF 0x80000000
 
 struct kyouko3_frame{
   unsigned int cols;
@@ -159,13 +161,10 @@ int kyouko3_release(struct inode *inode, struct file *fp)
   return 0;
 }
 
-#define CONTROL_OFF 0
-#define FB_OFF 0x80000000
 int kyouko3_mmap(struct file *fp, struct vm_area_struct *vma)
 {
   int ret = -1;
   unsigned int offset = vma->vm_pgoff << PAGE_SHIFT;
-  printk(KERN_ALERT "[KERNEL] %u\n", offset);
   switch(offset){
     case CONTROL_OFF:
       ret = io_remap_pfn_range(vma, vma->vm_start, kyouko3.p_control_base>>PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot);
@@ -219,7 +218,6 @@ void kyouko3_vmode(void)
     K_WRITE_REG(FRAME_PIXFORMAT, frame.pixFormat);
     K_WRITE_REG(FRAME_STARTADDR, frame.startAddr);
     
-    //TODO: recheck abt bit mask? 
     //set accelaration bit mask
     K_WRITE_REG(CONFIG_ACC, CONFIG_ACC_MASK);
     
@@ -255,7 +253,8 @@ void kyouko3_vmode(void)
 long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 {
   int ret;
-  struct fifo_entry entry;  switch(cmd){
+  struct fifo_entry entry;  
+  switch(cmd){
       case FIFO_QUEUE:
         ret = copy_from_user(&entry, (struct fifo_entry*)arg, sizeof(struct fifo_entry));
         printk(KERN_ALERT "[KERNEL] entry.cmd %d entry.value %d \n", entry.cmd, entry.value);
