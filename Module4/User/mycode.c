@@ -7,14 +7,20 @@
 
 #define DEVICE_FILE_NAME "/dev/kyouko3"
 
-#define FIFO_FLUSH_REG 0x3ffc
-
 #define VMODE _IOW(0xcc, 0, unsigned long)
 #define BIND_DMA _IOW(0xcc, 1, unsigned long)
 #define START_DMA _IOWR(0xcc, 2, unsigned long)
 #define FIFO_QUEUE _IOWR(0xcc, 3, unsigned long)
 #define FIFO_FLUSH _IO(0xcc, 4)
 #define UNBIND_DMA _IOW(0xcc, 5, unsigned long)
+
+#define FIFO_FLUSH_REG 0x3ffc
+
+#define RASTER_PRIMITIVE 0x3000
+#define RASTER_EMIT 0x3004
+
+#define VERTEX_COORD 0x5000
+#define VERTEX_COLOR 0x5010
 
 #define KYOUKO3_CONTROL_SIZE 65536
 #define DEVICE_RAM 0x0020
@@ -50,8 +56,16 @@ int main(int argc, char *argv[])
   int ret, i;
   unsigned int RAM_SIZE;
   struct fifo_entry entry;
-  entry.cmd = FIFO_FLUSH_REG;
-  entry.value = 0;
+  
+  float x[3] = {0.0, -0.5, 0.5};
+  float y[3] = {-0.5, 0.2, 0.2};
+  float z[3] = {0.0, 0.0, 0.0};
+  float w[3] = {1.0, 1.0, 1.0};
+  
+  float r[3] = {1.0, 0.0, 0.0};
+  float b[3] = {0.0, 1.0, 0.0};
+  float g[3] = {0.0, 0.0, 1.0};
+  float a[3] = {0.0, 0.0, 0.0};
   
   printf("[USER] Opening device : %s\n", DEVICE_FILE_NAME);
   fd = open(DEVICE_FILE_NAME, O_RDWR);
@@ -71,12 +85,68 @@ int main(int argc, char *argv[])
 
   ioctl(fd, VMODE, GRAPHICS_ON);
   
-  for(i = 220*1024; i < 221*1024; i++)
+  entry.cmd = RASTER_PRIMITIVE;
+  entry.value = 1;
+  ioctl(fd, FIFO_QUEUE, &entry);
+  
+  for(i = 0; i < 3; i++)
   {
-      U_WRITE_FB(i, 0x00ff0000);
+    //Writing X-coord
+    entry.cmd = VERTEX_COORD;
+    entry.value = (unsigned int*)x[i];
+    ioctl(fd, FIFO_QUEUE, &entry);
+    
+    //Writing Y-coord
+    entry.cmd = VERTEX_COORD+0x0004;
+    entry.value = (unsigned int*)y[i];
+    ioctl(fd, FIFO_QUEUE, &entry);
+    
+    //Writing Z-coord
+    entry.cmd = VERTEX_COORD+0x0008;
+    entry.value = (unsigned int*)z[i];
+    ioctl(fd, FIFO_QUEUE, &entry);
+    
+    //Writing w-coord
+    entry.cmd = VERTEX_COORD+0x000c;
+    entry.value = (unsigned int*)w[i];
+    ioctl(fd, FIFO_QUEUE, &entry);
+    
+    //Writing red color
+    entry.cmd = VERTEX_COLOR;
+    entry.value = (unsigned int*)r[i];
+    ioctl(fd, FIFO_QUEUE, &entry);
+    
+    //Writing green color
+    entry.cmd = VERTEX_COLOR+0x0004;
+    entry.value = (unsigned int*)g[i];
+    ioctl(fd, FIFO_QUEUE, &entry);
+    
+    //Writing blue color
+    entry.cmd = VERTEX_COLOR+0x0008;
+    entry.value = (unsigned int*)b[i];
+    ioctl(fd, FIFO_QUEUE, &entry);
+    
+    //Writing alpha color
+    entry.cmd = VERTEX_COLOR+0x000c;
+    entry.value = (unsigned int*)a[i];
+    ioctl(fd, FIFO_QUEUE, &entry);
+    
+    //Write 0 to vertex emit
+    entry.cmd = RASTER_EMIT;
+    entry.value = 0;
+    ioctl(fd, FIFO_QUEUE, &entry);
   }
   
+  //Write 0 to command/raster primitive
+  entry.cmd = RASTER_PRIMITIVE;
+  entry.value = 0;
   ioctl(fd, FIFO_QUEUE, &entry);
+  
+  //Write 0 to flush register
+  entry.cmd = FIFO_FLUSH_REG;
+  entry.value = 0;
+  ioctl(fd, FIFO_QUEUE, &entry);
+  
   ioctl(fd, FIFO_FLUSH, 0);
   
   sleep(10);
