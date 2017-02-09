@@ -111,9 +111,9 @@ int main(int argc, char *argv[])
     entry.value = *(unsigned int*)&w[i];
     ioctl(fd, FIFO_QUEUE, &entry);
     
-    //Writing red color
+    //Writing blue color
     entry.cmd = VERTEX_COLOR;
-    entry.value = *(unsigned int*)&r[i];
+    entry.value = *(unsigned int*)&b[i];
     ioctl(fd, FIFO_QUEUE, &entry);
     
     //Writing green color
@@ -121,9 +121,9 @@ int main(int argc, char *argv[])
     entry.value = *(unsigned int*)&g[i];
     ioctl(fd, FIFO_QUEUE, &entry);
     
-    //Writing blue color
+    //Writing red color
     entry.cmd = VERTEX_COLOR+0x0008;
-    entry.value = *(unsigned int*)&b[i];
+    entry.value = *(unsigned int*)&r[i];
     ioctl(fd, FIFO_QUEUE, &entry);
     
     //Writing alpha color
