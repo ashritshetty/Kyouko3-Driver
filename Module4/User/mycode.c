@@ -93,42 +93,42 @@ int main(int argc, char *argv[])
   {
     //Writing X-coord
     entry.cmd = VERTEX_COORD;
-    entry.value = (unsigned int*)x[i];
+    entry.value = *(unsigned int*)x[i];
     ioctl(fd, FIFO_QUEUE, &entry);
     
     //Writing Y-coord
     entry.cmd = VERTEX_COORD+0x0004;
-    entry.value = (unsigned int*)y[i];
+    entry.value = *(unsigned int*)y[i];
     ioctl(fd, FIFO_QUEUE, &entry);
     
     //Writing Z-coord
     entry.cmd = VERTEX_COORD+0x0008;
-    entry.value = (unsigned int*)z[i];
+    entry.value = *(unsigned int*)z[i];
     ioctl(fd, FIFO_QUEUE, &entry);
     
     //Writing w-coord
     entry.cmd = VERTEX_COORD+0x000c;
-    entry.value = (unsigned int*)w[i];
+    entry.value = *(unsigned int*)w[i];
     ioctl(fd, FIFO_QUEUE, &entry);
     
     //Writing red color
     entry.cmd = VERTEX_COLOR;
-    entry.value = (unsigned int*)r[i];
+    entry.value = *(unsigned int*)r[i];
     ioctl(fd, FIFO_QUEUE, &entry);
     
     //Writing green color
     entry.cmd = VERTEX_COLOR+0x0004;
-    entry.value = (unsigned int*)g[i];
+    entry.value = *(unsigned int*)g[i];
     ioctl(fd, FIFO_QUEUE, &entry);
     
     //Writing blue color
     entry.cmd = VERTEX_COLOR+0x0008;
-    entry.value = (unsigned int*)b[i];
+    entry.value = *(unsigned int*)b[i];
     ioctl(fd, FIFO_QUEUE, &entry);
     
     //Writing alpha color
     entry.cmd = VERTEX_COLOR+0x000c;
-    entry.value = (unsigned int*)a[i];
+    entry.value = *(unsigned int*)a[i];
     ioctl(fd, FIFO_QUEUE, &entry);
     
     //Write 0 to vertex emit
