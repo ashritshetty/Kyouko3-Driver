@@ -35,6 +35,9 @@
 #define FIFO_CLEAR_BUF 0x3008
 #define FIFO_FLUSH_REG 0x3ffc
 
+#define DMA_BUF_ADDR_A 0x2000
+#define DMA_BUF_CONF_A 0x2008
+
 #define VMODE _IOW(0xcc, 0, unsigned long)
 #define BIND_DMA _IOW(0xcc, 1, unsigned long)
 #define START_DMA _IOWR(0xcc, 2, unsigned long)

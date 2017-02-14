@@ -9,6 +9,7 @@
 #include <asm/io.h>
 #include <linux/delay.h>
 #include <linux/sched.h>
+#include <linux/wait.h>
 #include "kyouko3def.h"
 
 MODULE_LICENSE("Proprietary");
@@ -34,6 +35,11 @@ MODULE_AUTHOR("Clemson Tigers");
 
 #define CONTROL_OFF 0
 #define FB_OFF 0x80000000
+
+#define NUM_DMA_BUF 8
+#define DMA_BUF_SIZE 126976u //1024*124 = (124K)
+
+DECLARE_WAIT_QUEUE_HEAD(dma_snooze);
 
 struct kyouko3_frame{
   unsigned int cols;
@@ -79,6 +85,13 @@ struct fifo{
     unsigned int tail_cache;
 }fifo;
 
+struct dma_addr{
+    dma_addr_t p_base;
+    void* k_base;
+    unsigned int* u_base;
+    unsigned int count;
+}dma_addr;
+
 struct kyouko3 {
   unsigned long p_control_base;
   unsigned long p_ram_card_base;
@@ -89,8 +102,18 @@ struct kyouko3 {
   unsigned int *k_control_base;
   unsigned int *k_ram_card_base;
   struct pci_dev *kyouko3_pci_dev;
+
   struct fifo kyouko3_fifo;
+  
+  //This give the current mmap dma index value
+  unsigned int curr_dma_mmap_index;
+  unsigned int dma_fill;
+  unsigned int dma_drain;
+
 }kyouko3;
+
+//Creating Pool of 8 DMA buf
+struct dma_addr dma_buf[8];
 
 struct pci_device_id kyouko3_dev_ids[] = {
   {PCI_DEVICE(PCI_VENDOR_ID_CCORSI, PCI_DEVICE_ID_CCORSI_KYOUKO3)},
@@ -145,6 +168,9 @@ int kyouko3_open(struct inode *inode, struct file *fp)
   
   kyouko3.graphics_on = 0;
   kyouko3.dma_mapped = 0;
+  
+  kyouko3.dma_fill = 0;
+  kyouko3.dma_drain = 0;
     
   printk(KERN_ALERT "[KERNEL] Successfully opened device\n");
   return 0;
@@ -152,7 +178,7 @@ int kyouko3_open(struct inode *inode, struct file *fp)
 
 int kyouko3_release(struct inode *inode, struct file *fp)
 {
-  pci_free_consistent(kyouko3.kyouko3_pci_dev, 8192u, kyouko3.kyouko3_fifo.k_base, kyouko3.kyouko3_fifo.p_base);  
+  pci_free_consistent(kyouko3.kyouko3_pci_dev, 8192u, kyouko3.kyouko3_fifo.k_base, kyouko3.kyouko3_fifo.p_base);
   
   iounmap(kyouko3.k_ram_card_base);  
   iounmap(kyouko3.k_control_base);
@@ -164,6 +190,10 @@ int kyouko3_release(struct inode *inode, struct file *fp)
 int kyouko3_mmap(struct file *fp, struct vm_area_struct *vma)
 {
   int ret = -1;
+  unsigned int uid = current->fsuid;
+  if (uid != 0){
+      return ret;
+  }
   unsigned int offset = vma->vm_pgoff << PAGE_SHIFT;
   switch(offset){
     case CONTROL_OFF:
@@ -173,6 +203,10 @@ int kyouko3_mmap(struct file *fp, struct vm_area_struct *vma)
     case FB_OFF:
       ret = io_remap_pfn_range(vma, vma->vm_start, kyouko3.p_ram_card_base>>PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot);
       printk(KERN_ALERT "[KERNEL] Frame buffer mapped \n");
+      break;
+    case default:
+      ret = io_remap_pfn_range(vma, vma->vm_start, dma_buf[curr_dma_mmap_index].k_base>>PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot);
+      printk(KERN_ALERT "[KERNEL] DMA buffer mapped \n");
       break;
   }
   return ret;
@@ -203,6 +237,11 @@ void kyouko3_fifo_flush(void)
     kyouko3.kyouko3_fifo.tail_cache = K_READ_REG(FIFO_TAIL);
     schedule();
   }
+}
+
+void sync_kick_fifo(void)
+{
+    K_WRITE_REG(FIFO_HEAD, kyouko3.kyouko3_fifo.head);
 }
 
 void kyouko3_vmode(void)
@@ -252,12 +291,11 @@ void kyouko3_vmode(void)
 
 long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 {
-  int ret;
-  struct fifo_entry entry;  
+  int ret, i;
+  struct fifo_entry entry;
   switch(cmd){
       case FIFO_QUEUE:
         ret = copy_from_user(&entry, (struct fifo_entry*)arg, sizeof(struct fifo_entry));
-        printk(KERN_ALERT "[KERNEL] entry.cmd %d entry.value %d \n", entry.cmd, entry.value);
         FIFO_WRITE(entry.cmd, entry.value);
         break;
       
@@ -279,6 +317,62 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
           msleep(10);    
         }
         break;
+      
+      case BIND_DMA:
+          for(i = 0; i < NUM_DMA_BUF; ++i)
+          {
+              dma_buf[i].k_base = pci_alloc_consistent(kyouko3.kyouko3_pci_dev, DMA_BUF_SIZE, &dma_buf[i].p_base);
+              kyouko3.curr_dma_mmap_index = i;
+              dma_buf[i].u_base = vm_mmap(fp, 0, DMA_BUF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, 0x1);
+              //TODO: Handle the failure cases of above calls
+          }
+          (unsigned int*)arg = dma_buf[0].u_base;
+          
+          //TODO: ADD INTERRUPT HANDLER CODE HERE
+          
+          break;
+
+      case UNBIND_DMA:
+          for(i = 0; i < NUM_DMA_BUF; ++i)
+          {
+            vm_unmap(dma_buf[i].u_base);
+            pci_free_consistent(kyouko3.kyouko3_pci_dev, DMA_BUF_SIZE, dma_buf[i].k_base, dma_buf[i].p_base);
+          }
+          break;
+      
+      case START_DMA:
+      {
+           unsigned int flags;
+           unsigned int count = *((unsigned int*)arg);
+           
+           if(count == 0) return;
+           
+           local_irq_save(flags);
+           if(kyouko3.dma_fill == kyouko3.dma_drain)
+           {
+               //Queue is empty at this point
+               local_irq_restore(flags);
+               kyouko3.dma_fill = (kyouko3.dma_fill+1)%NUM_DMA_BUF;
+               FIFO_WRITE(DMA_BUF_ADDR_A, dma_buf[kyouko3.dma_drain].k_base);
+               FIFO_WRITE(DMA_BUF_CONF_A, count);
+               sync_kick_fifo();
+               return;
+           }
+           
+           //System is busy therefore queueing the buffers
+           dma_buf[kyouko3.dma_fill].count = count);
+           kyouko3.dma_fill = (kyouko3.dma_fill+1)%NUM_DMA_BUF;
+           
+           if(kyouko3.dma_fill == kyouko3.dma_drain)
+           {
+               wait_event_interruptible(dma_snooze, kyouko3.dma_fill != kyouko3.dma_drain);
+               local_irq_restore(flags);
+               return;
+           }
+           
+           (unsigned int*)arg = dma_buf[kyouko3.dma_fill].u_base;
+           break;
+      } 
   }
   return 0;
 }
