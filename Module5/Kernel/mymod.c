@@ -10,6 +10,7 @@
 #include <linux/delay.h>
 #include <linux/sched.h>
 #include <linux/wait.h>
+#include <linux/mman.h>
 #include "kyouko3def.h"
 
 MODULE_LICENSE("Proprietary");
@@ -191,10 +192,11 @@ int kyouko3_mmap(struct file *fp, struct vm_area_struct *vma)
 {
   int ret = -1;
   unsigned int uid = current->fsuid;
+  unsigned int offset;
   if (uid != 0){
       return ret;
   }
-  unsigned int offset = vma->vm_pgoff << PAGE_SHIFT;
+  offset = vma->vm_pgoff << PAGE_SHIFT;
   switch(offset){
     case CONTROL_OFF:
       ret = io_remap_pfn_range(vma, vma->vm_start, kyouko3.p_control_base>>PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot);
@@ -204,8 +206,8 @@ int kyouko3_mmap(struct file *fp, struct vm_area_struct *vma)
       ret = io_remap_pfn_range(vma, vma->vm_start, kyouko3.p_ram_card_base>>PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot);
       printk(KERN_ALERT "[KERNEL] Frame buffer mapped \n");
       break;
-    case default:
-      ret = io_remap_pfn_range(vma, vma->vm_start, dma_buf[curr_dma_mmap_index].k_base>>PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot);
+    default:
+      ret = io_remap_pfn_range(vma, vma->vm_start, dma_buf[kyouko3.curr_dma_mmap_index].k_base>>PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot);
       printk(KERN_ALERT "[KERNEL] DMA buffer mapped \n");
       break;
   }
@@ -326,7 +328,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
               dma_buf[i].u_base = vm_mmap(fp, 0, DMA_BUF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, 0x1);
               //TODO: Handle the failure cases of above calls
           }
-          (unsigned int*)arg = dma_buf[0].u_base;
+          *(unsigned int*)arg = *(dma_buf[0].u_base);
           
           //TODO: ADD INTERRUPT HANDLER CODE HERE
           
@@ -335,17 +337,18 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
       case UNBIND_DMA:
           for(i = 0; i < NUM_DMA_BUF; ++i)
           {
-            vm_unmap(dma_buf[i].u_base);
+            vm_munmap(dma_buf[i].u_base, DMA_BUF_SIZE);
             pci_free_consistent(kyouko3.kyouko3_pci_dev, DMA_BUF_SIZE, dma_buf[i].k_base, dma_buf[i].p_base);
           }
           break;
       
       case START_DMA:
       {
-           unsigned int flags;
+           unsigned long flags;
            unsigned int count = *((unsigned int*)arg);
            
-           if(count == 0) return;
+           if(count == 0) 
+               return 0;
            
            local_irq_save(flags);
            if(kyouko3.dma_fill == kyouko3.dma_drain)
@@ -353,24 +356,24 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
                //Queue is empty at this point
                local_irq_restore(flags);
                kyouko3.dma_fill = (kyouko3.dma_fill+1)%NUM_DMA_BUF;
-               FIFO_WRITE(DMA_BUF_ADDR_A, dma_buf[kyouko3.dma_drain].k_base);
+               FIFO_WRITE(DMA_BUF_ADDR_A, *dma_buf[kyouko3.dma_drain].k_base);
                FIFO_WRITE(DMA_BUF_CONF_A, count);
                sync_kick_fifo();
-               return;
+               return 0;
            }
            
            //System is busy therefore queueing the buffers
-           dma_buf[kyouko3.dma_fill].count = count);
+           dma_buf[kyouko3.dma_fill].count = count;
            kyouko3.dma_fill = (kyouko3.dma_fill+1)%NUM_DMA_BUF;
            
            if(kyouko3.dma_fill == kyouko3.dma_drain)
            {
                wait_event_interruptible(dma_snooze, kyouko3.dma_fill != kyouko3.dma_drain);
                local_irq_restore(flags);
-               return;
+               return 0;
            }
            
-           (unsigned int*)arg = dma_buf[kyouko3.dma_fill].u_base;
+           *(unsigned int*)arg = *(dma_buf[kyouko3.dma_fill].u_base);
            break;
       } 
   }
