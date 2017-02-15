@@ -88,7 +88,7 @@ struct fifo{
 
 struct dma_addr{
     dma_addr_t p_base;
-    void* k_base;
+    unsigned long* k_base;
     unsigned long* u_base;
     unsigned int count;
 }dma_addr;

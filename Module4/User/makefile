@@ -8,8 +8,8 @@ LDFLAGS =
 EXEC = mycode
 
 ${EXEC}: mycode.o
-    ${CC} mycode.c -o ${EXEC}
+	${CC} mycode.c -o ${EXEC}
     
 clean:
-    rm -rf ${EXEC}
-    rm -rf *.swp
+	rm -rf ${EXEC}
+	rm -rf *.swp

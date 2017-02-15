@@ -1,2 +1,2 @@
-/root/ashrit/Kyouko3-Driver/Module3/Kernel/mymod.ko
-/root/ashrit/Kyouko3-Driver/Module3/Kernel/mymod.o
+/root/ashrit/Kyouko3-Driver/Module4/Kernel/mymod.ko
+/root/ashrit/Kyouko3-Driver/Module4/Kernel/mymod.o
