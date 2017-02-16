@@ -11,7 +11,7 @@
 #include <linux/sched.h>
 #include <linux/wait.h>
 #include <linux/mman.h>
-#include <linux/cred.h>
+#include <asm/current.h>
 #include <linux/interrupt.h>
 #include "kyouko3def.h"
 
