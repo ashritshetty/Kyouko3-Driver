@@ -38,6 +38,9 @@
 #define DMA_BUF_ADDR_A 0x2000
 #define DMA_BUF_CONF_A 0x2008
 
+#define INTR_SET 0x100C
+#define INTR_STATUS 0x4008
+
 #define VMODE _IOW(0xcc, 0, unsigned long)
 #define BIND_DMA _IOW(0xcc, 1, unsigned long)
 #define START_DMA _IOWR(0xcc, 2, unsigned long)
