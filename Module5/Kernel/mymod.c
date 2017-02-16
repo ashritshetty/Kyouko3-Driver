@@ -402,7 +402,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 
       case START_DMA:
       {
-           spinlock_t mLock = SPIN_LOCK_UNLOCKED;
+           DEFINE_SPINLOCK(mLock);
            unsigned long flags;
            unsigned int count = *((unsigned int*)arg);
 
