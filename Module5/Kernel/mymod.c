@@ -369,8 +369,8 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
             pci_free_consistent(kyouko3.kyouko3_pci_dev, DMA_BUF_SIZE, dma_buf[i].k_base, dma_buf[i].p_base);
           }
           K_WRITE_REG(INTR_SET, 0x0);
-          free_irq(kyouko3.pci_dev);
-          pci_disable_msi(kyouko3.pci_dev);
+          free_irq(kyouko3.kyouko3_pci_dev);
+          pci_disable_msi(kyouko3.kyouko3_pci_dev);
           break;
 
       case START_DMA:
