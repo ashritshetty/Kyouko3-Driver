@@ -13,6 +13,8 @@
 #include <linux/mman.h>
 #include <asm/current.h>
 #include <linux/interrupt.h>
+#include <linux/spinlock.h>
+#include <linux/spinlock_types.h>
 #include "kyouko3def.h"
 
 MODULE_LICENSE("Proprietary");
@@ -112,6 +114,8 @@ struct kyouko3 {
   unsigned int curr_dma_mmap_index;
   unsigned int dma_fill;
   unsigned int dma_drain;
+  unsigned int suspend_phase;
+  unsigned int isQueueFull;
 
 }kyouko3;
 
@@ -174,6 +178,9 @@ int kyouko3_open(struct inode *inode, struct file *fp)
 
   kyouko3.dma_fill = 0;
   kyouko3.dma_drain = 0;
+  
+  kyouko3.suspend_phase = 0;
+  kyouko3.isQueueFull = 0;
 
   printk(KERN_ALERT "[KERNEL] Successfully opened device\n");
   return 0;
@@ -294,6 +301,12 @@ void kyouko3_vmode(void)
     kyouko3.graphics_on = 1;
 }
 
+void drainDMA(int count){
+   FIFO_WRITE(DMA_BUF_ADDR_A, *(dma_buf[kyouko3.dma_drain].k_base));
+   FIFO_WRITE(DMA_BUF_CONF_A, count);
+   sync_kick_fifo(); 
+}
+
 irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
 {
   unsigned int iflags;
@@ -302,7 +315,18 @@ irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
   if((iflags & 0x02) == 0)
     return IRQ_NONE;
 
-  //TODO : Handle Interrupt
+  if(kyouko3.dma_fill == kyouko3.dma_drain && kyouko3.isQueueFull == 1 && kyouko3.suspend_phase == 0)
+  {
+      kyouko3.dma_drain = (kyouko3.dma_fill+1)%NUM_DMA_BUF;;
+      drainDMA(dma_buf[kyouko3.dma_drain].count);
+      wake_up_interruptible(&dma_snooze);
+      kyouko3.isQueueFull == 0;
+  }
+  else if(kyouko3.dma_fill != kyouko3.dma_drain)
+  {
+      kyouko3.dma_drain = (kyouko3.dma_fill+1)%NUM_DMA_BUF;;
+      drainDMA(dma_buf[kyouko3.dma_drain].count);
+  }
 
   return IRQ_HANDLED;
 }
@@ -346,19 +370,21 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
           }
           *(unsigned long*)arg = *(dma_buf[0].u_base);
 
-          //TODO: ADD INTERRUPT HANDLER CODE HERE
+          //ADD and Enable INTERRUPT HANDLER
           ret = pci_enable_msi(kyouko3.kyouko3_pci_dev);
-          if(ret == -1)
+          if(ret != 0)
           {
             printk(KERN_ALERT "[KERNEL] Error enabling message signaled interrupts\n");
-            return 0;
+            //TODO: USE ENUM: Returning error msg
+            return -1;
           }
           ret = request_irq(kyouko3.kyouko3_pci_dev->irq, (irq_handler_t) dma_intr, IRQF_SHARED, "dma_intr", &kyouko3);
-          if(ret == -1)
+          if(ret != 0)
           {
             pci_disable_msi(kyouko3.kyouko3_pci_dev);
             printk(KERN_ALERT "[KERNEL] IRQ request failed\n");
-            return 0;
+            //TODO: USE ENUM: Returning error msg
+            return -1;
           }
           K_WRITE_REG(INTR_SET, 0x02);
           break;
@@ -376,21 +402,24 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 
       case START_DMA:
       {
+           spinlock_t mLock = SPIN_LOCK_UNLOCK;
            unsigned long flags;
            unsigned int count = *((unsigned int*)arg);
 
            if(count == 0)
                return 0;
 
-           local_irq_save(flags);
+           //local_irq_save(flags);
+           spin_lock_irqsave(&mLock, flags);
            if(kyouko3.dma_fill == kyouko3.dma_drain)
            {
                //Queue is empty at this point
-               local_irq_restore(flags);
+               //local_irq_restore(flags);
+               spin_unlock_irqrestore(&mLock, flags);
+               
                kyouko3.dma_fill = (kyouko3.dma_fill+1)%NUM_DMA_BUF;
-               FIFO_WRITE(DMA_BUF_ADDR_A, *(dma_buf[kyouko3.dma_drain].k_base));
-               FIFO_WRITE(DMA_BUF_CONF_A, count);
-               sync_kick_fifo();
+               drainDMA(count);
+               kyouko3.isQueueFull == 0;
                return 0;
            }
 
@@ -400,11 +429,17 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 
            if(kyouko3.dma_fill == kyouko3.dma_drain)
            {
-               wait_event_interruptible(dma_snooze, kyouko3.dma_fill != kyouko3.dma_drain);
-               local_irq_restore(flags);
-               return 0;
+               kyouko3.suspend_phase = 1;
+               kyouko3.isQueueFull == 1;
            }
-
+           spin_unlock_irqrestore(&mLock, flags);
+           
+           if(kyouko3.suspend_phase == 1)
+           {
+               kyouko3.suspend_phase = 0;
+               wait_event_interruptible(dma_snooze, kyouko3.dma_fill != kyouko3.dma_drain);
+           }
+           
            *(unsigned long*)arg = *(dma_buf[kyouko3.dma_fill].u_base);
            break;
       }
