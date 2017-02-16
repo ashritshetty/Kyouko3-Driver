@@ -29,6 +29,8 @@
 #define GRAPHICS_ON 1
 #define GRAPHICS_OFF 0
 
+#define DMA_HEADER_SZ 0x0020
+
 struct fifo_entry{
     unsigned int cmd;
     unsigned int value;
@@ -38,7 +40,13 @@ struct u_kyouko_device
 {
   unsigned int *u_control_base;
   unsigned int *u_frame_buffer;
-} kyouko3;
+}kyouko3;
+
+struct kyouko3_dma_header{
+    unsigned int address : 14;
+    unsigned int count : 10;
+    unsigned int opCode : 8;
+}kyuoko3_dma_header;
 
 unsigned int U_READ_REG(unsigned int reg)
 {
@@ -56,6 +64,13 @@ int main(int argc, char *argv[])
   int ret, i;
   unsigned int RAM_SIZE;
   struct fifo_entry entry;
+  unsigned long dma_addr;
+  
+  struct kyuoko3_dma_header k_dma_header= {
+      .address = 0x1045,
+      .count = 0x3,
+      .opCode = 0x14
+  }; 
   
   float x[3] = {0.0, -0.5, 0.5};
   float y[3] = {-0.5, 0.2, 0.2};
@@ -75,72 +90,66 @@ int main(int argc, char *argv[])
     return 0;
   }
   
-  kyouko3.u_control_base = mmap(0, KYOUKO3_CONTROL_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+  //kyouko3.u_control_base = mmap(0, KYOUKO3_CONTROL_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
   
-  RAM_SIZE = U_READ_REG(DEVICE_RAM);
-  printf("[USER] Ram size in MB is: %d \n", RAM_SIZE);
+  //RAM_SIZE = U_READ_REG(DEVICE_RAM);
+  //printf("[USER] Ram size in MB is: %d \n", RAM_SIZE);
   
-  RAM_SIZE = RAM_SIZE*1024*1024;
-  kyouko3.u_frame_buffer = mmap(0, RAM_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x80000000);
+  //RAM_SIZE = RAM_SIZE*1024*1024;
+  //kyouko3.u_frame_buffer = mmap(0, RAM_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x80000000);
 
   ioctl(fd, VMODE, GRAPHICS_ON);
   
-  entry.cmd = RASTER_PRIMITIVE;
-  entry.value = 1;
-  ioctl(fd, FIFO_QUEUE, &entry);
+  //entry.cmd = RASTER_PRIMITIVE;
+  //entry.value = 1;
+  //ioctl(fd, FIFO_QUEUE, &entry);
+  
+  //Calling BIND_DMA
+  ioctl(fd, BIND_DMA, &dma_addr);
   
   for(i = 0; i < 3; i++)
   {
+    //Writing dma header
+    entry.cmd = dma_addr;
+    entry.value = *(unsigned int*)&k_dma_header;
+    ioctl(fd, FIFO_QUEUE, &entry);  
+      
+    //Format is BGRXYZ  
+    dma_addr = dma_addr + DMA_HEADER_SZ;
+    
+    //Writing blue color
+    entry.cmd = dma_addr;
+    entry.value = *(unsigned int*)&b[i];
+    ioctl(fd, FIFO_QUEUE, &entry);
+    
+    //Writing green color
+    entry.cmd = dma_addr+0x0004;
+    entry.value = *(unsigned int*)&g[i];
+    ioctl(fd, FIFO_QUEUE, &entry);
+    
+    //Writing red color
+    entry.cmd = dma_addr+0x0008;
+    entry.value = *(unsigned int*)&r[i];
+    ioctl(fd, FIFO_QUEUE, &entry);
+      
     //Writing X-coord
-    entry.cmd = VERTEX_COORD;
+    entry.cmd = dma_addr+0x000c;
     entry.value = *(unsigned int*)&x[i];
     ioctl(fd, FIFO_QUEUE, &entry);
     
     //Writing Y-coord
-    entry.cmd = VERTEX_COORD+0x0004;
+    entry.cmd = dma_addr+0x0010;
     entry.value = *(unsigned int*)&y[i];
     ioctl(fd, FIFO_QUEUE, &entry);
     
     //Writing Z-coord
-    entry.cmd = VERTEX_COORD+0x0008;
+    entry.cmd = dma_addr+0x0014;
     entry.value = *(unsigned int*)&z[i];
     ioctl(fd, FIFO_QUEUE, &entry);
-    
-    //Writing w-coord
-    entry.cmd = VERTEX_COORD+0x000c;
-    entry.value = *(unsigned int*)&w[i];
-    ioctl(fd, FIFO_QUEUE, &entry);
-    
-    //Writing red color
-    entry.cmd = VERTEX_COLOR;
-    entry.value = *(unsigned int*)&r[i];
-    ioctl(fd, FIFO_QUEUE, &entry);
-    
-    //Writing green color
-    entry.cmd = VERTEX_COLOR+0x0004;
-    entry.value = *(unsigned int*)&g[i];
-    ioctl(fd, FIFO_QUEUE, &entry);
-    
-    //Writing blue color
-    entry.cmd = VERTEX_COLOR+0x0008;
-    entry.value = *(unsigned int*)&b[i];
-    ioctl(fd, FIFO_QUEUE, &entry);
-    
-    //Writing alpha color
-    entry.cmd = VERTEX_COLOR+0x000c;
-    entry.value = *(unsigned int*)&a[i];
-    ioctl(fd, FIFO_QUEUE, &entry);
-    
-    //Write 0 to vertex emit
-    entry.cmd = RASTER_EMIT;
-    entry.value = 0;
-    ioctl(fd, FIFO_QUEUE, &entry);
+
   }
-  
-  //Write 0 to command/raster primitive
-  entry.cmd = RASTER_PRIMITIVE;
-  entry.value = 0;
-  ioctl(fd, FIFO_QUEUE, &entry);
+
+  ioctl(fd, START_DMA, &dma_addr);
   
   //Write 0 to flush register
   entry.cmd = FIFO_FLUSH_REG;
@@ -151,6 +160,7 @@ int main(int argc, char *argv[])
   
   sleep(10);
   
+  ioctl(fd, UNBIND_DMA, &dma_addr);
   ioctl(fd, VMODE, GRAPHICS_OFF);
   
   printf("[USER] Closing device : %s\n", DEVICE_FILE_NAME);
