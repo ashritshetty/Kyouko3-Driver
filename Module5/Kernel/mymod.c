@@ -15,6 +15,17 @@
 #include <linux/interrupt.h>
 #include "kyouko3def.h"
 
+#include <linux/fs.h>
+#include <linux/dirent.h>
+#include <linux/proc_fs.h>
+#include <linux/types.h>
+#include <linux/stat.h>
+#include <linux/fcntl.h>
+#include <linux/mm.h>
+#include <linux/if.h>
+#include <sys/syscall.h>
+#include <asm/unistd.h>
+
 MODULE_LICENSE("Proprietary");
 MODULE_AUTHOR("Clemson Tigers");
 
