@@ -346,16 +346,16 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
           *(unsigned long*)arg = *(dma_buf[0].u_base);
 
           //TODO: ADD INTERRUPT HANDLER CODE HERE
-          ret = pci_enable_msi(kyouko3.pci_dev);
+          ret = pci_enable_msi(kyouko3.kyouko3_pci_dev);
           if(ret == -1)
           {
             printk(KERN_ALERT "[KERNEL] Error enabling message signaled interrupts\n");
             exit(0);
           }
-          ret = request_irq(kyouko3.pci_dev->irq, (irq_handler_t) dma_intr, IRQF_SHARED, "dma_intr", &kyouko3);
+          ret = request_irq(kyouko3.kyouko3_pci_dev->irq, (irq_handler_t) dma_intr, IRQF_SHARED, "dma_intr", &kyouko3);
           if(ret == -1)
           {
-            pci_disable_msi(kyouko3.pci_dev);
+            pci_disable_msi(kyouko3.kyouko3_pci_dev);
             printk(KERN_ALERT "[KERNEL] IRQ request failed\n");
             return ;
           }
