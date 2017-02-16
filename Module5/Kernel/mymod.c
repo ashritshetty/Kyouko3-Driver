@@ -350,14 +350,14 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
           if(ret == -1)
           {
             printk(KERN_ALERT "[KERNEL] Error enabling message signaled interrupts\n");
-            exit(0);
+            return 0;
           }
           ret = request_irq(kyouko3.kyouko3_pci_dev->irq, (irq_handler_t) dma_intr, IRQF_SHARED, "dma_intr", &kyouko3);
           if(ret == -1)
           {
             pci_disable_msi(kyouko3.kyouko3_pci_dev);
             printk(KERN_ALERT "[KERNEL] IRQ request failed\n");
-            return ;
+            return 0;
           }
           K_WRITE_REG(INTR_SET, 0x02);
           break;
