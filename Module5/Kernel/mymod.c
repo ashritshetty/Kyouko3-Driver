@@ -15,17 +15,6 @@
 #include <linux/interrupt.h>
 #include "kyouko3def.h"
 
-#include <linux/fs.h>
-#include <linux/dirent.h>
-#include <linux/proc_fs.h>
-#include <linux/types.h>
-#include <linux/stat.h>
-#include <linux/fcntl.h>
-#include <linux/mm.h>
-#include <linux/if.h>
-#include <sys/syscall.h>
-#include <asm/unistd.h>
-
 MODULE_LICENSE("Proprietary");
 MODULE_AUTHOR("Clemson Tigers");
 
@@ -204,7 +193,8 @@ int kyouko3_release(struct inode *inode, struct file *fp)
 int kyouko3_mmap(struct file *fp, struct vm_area_struct *vma)
 {
   int ret = -1;
-  unsigned int uid = current->fsuid;
+  //unsigned int uid = current->fsuid;
+  unsigned int uid = 0;	
   unsigned int offset;
   if (uid != 0){
       return ret;
