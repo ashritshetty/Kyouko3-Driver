@@ -320,7 +320,7 @@ irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
       kyouko3.dma_drain = (kyouko3.dma_fill+1)%NUM_DMA_BUF;;
       drainDMA(dma_buf[kyouko3.dma_drain].count);
       wake_up_interruptible(&dma_snooze);
-      kyouko3.isQueueFull == 0;
+      kyouko3.isQueueFull = 0;
   }
   else if(kyouko3.dma_fill != kyouko3.dma_drain)
   {
@@ -402,7 +402,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 
       case START_DMA:
       {
-           spinlock_t mLock = SPIN_LOCK_UNLOCK;
+           spinlock_t mLock = SPIN_LOCK_UNLOCKED;
            unsigned long flags;
            unsigned int count = *((unsigned int*)arg);
 
@@ -419,7 +419,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
                
                kyouko3.dma_fill = (kyouko3.dma_fill+1)%NUM_DMA_BUF;
                drainDMA(count);
-               kyouko3.isQueueFull == 0;
+               kyouko3.isQueueFull = 0;
                return 0;
            }
 
@@ -430,7 +430,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
            if(kyouko3.dma_fill == kyouko3.dma_drain)
            {
                kyouko3.suspend_phase = 1;
-               kyouko3.isQueueFull == 1;
+               kyouko3.isQueueFull = 1;
            }
            spin_unlock_irqrestore(&mLock, flags);
            
