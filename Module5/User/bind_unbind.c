@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
   int ret, i;
   unsigned int RAM_SIZE;
   struct fifo_entry entry;
-  unsigned long dma_addr = 0;
+  unsigned int dma_addr = 0;
   
   k_dma_header.address = 0x1045;
   k_dma_header.count = 0x0003;
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
   
   //Calling BIND_DMA
   ret = ioctl(fd, BIND_DMA, &dma_addr);
-  printf("DMA_ADDR: %lx \n", dma_addr);
+  printf("DMA_ADDR: %x \n", dma_addr);
   
   //Writing dma header
   entry.cmd = dma_addr;

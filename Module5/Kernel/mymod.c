@@ -93,7 +93,7 @@ struct fifo{
 struct dma_addr{
     dma_addr_t p_base;
     unsigned long* k_base;
-    unsigned long u_base;
+    unsigned int u_base;
     unsigned int count;
 }dma_addr;
 
@@ -316,7 +316,7 @@ void printDMABuf(int i){
     
   printk(KERN_ALERT "[KERNEL] dma_buf -> k_base addr: %p \n", dma_buf[i].k_base);
   printk(KERN_ALERT "[KERNEL] dma_buf -> p_base addr: %lx \n", (unsigned long)dma_buf[i].p_base);
-  printk(KERN_ALERT "[KERNEL] dma_buf -> u_base addr: %lx \n", dma_buf[i].u_base);
+  printk(KERN_ALERT "[KERNEL] dma_buf -> u_base addr: %x \n", dma_buf[i].u_base);
 }
 
 irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
@@ -393,7 +393,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
               //TODO: Handle the failure cases of above calls
           }
          
-          ret = copy_to_user((void __user*)arg, &(dma_buf[0].u_base), sizeof(unsigned long));
+          ret = copy_to_user((void __user*)arg, &(dma_buf[0].u_base), sizeof(unsigned int));
           //*(unsigned long*)arg = dma_buf[0].u_base;
 
           //ADDED and Enabled INTERRUPT HANDLER
@@ -428,11 +428,11 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 
       case START_DMA:
       {
-           unsigned long count = 0;
+           unsigned int count = 0;
            DEFINE_SPINLOCK(mLock);
            unsigned long flags;
            
-           ret = copy_from_user(&count, (unsigned long*)arg, sizeof(unsigned long));
+           ret = copy_from_user(&count, (unsigned int*)arg, sizeof(unsigned int));
            //count = *(unsigned long*)arg;
            printk(KERN_ALERT "[KERNEL] In icotl - START_DMA count is %lu \n", count);
            
@@ -473,7 +473,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
            }
            
            //TODO: Copy to user
-           ret = copy_to_user((void __user*)arg, &(dma_buf[kyouko3.dma_fill].u_base), sizeof(unsigned long));
+           ret = copy_to_user((void __user*)arg, &(dma_buf[kyouko3.dma_fill].u_base), sizeof(unsigned int));
            //*(unsigned long*)arg = dma_buf[kyouko3.dma_fill].u_base;
            break;
       }
