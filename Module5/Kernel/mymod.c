@@ -305,7 +305,7 @@ void kyouko3_vmode(void)
 void drainDMA(int count){
    FIFO_WRITE(DMA_BUF_ADDR_A, (dma_buf[kyouko3.dma_drain].p_base));
    FIFO_WRITE(DMA_BUF_CONF_A, count);
-   sync_kick_fifo(); 
+   sync_kick_fifo();
 }
 
 void printDMABuf(int i){
@@ -335,7 +335,7 @@ irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
       wake_up_interruptible(&dma_snooze);
       kyouko3.isQueueFull = 0;
   }
-  else if(kyouko3.dma_fill != kyouko3.dma_drain)
+  else if(abs(kyouko3.dma_fill - kyouko3.dma_drain) > 1)
   {
       printk(KERN_ALERT "[KERNEL] In dma interrupt handler Non Full drain\n");
       kyouko3.dma_drain = (kyouko3.dma_drain+1)%NUM_DMA_BUF;
