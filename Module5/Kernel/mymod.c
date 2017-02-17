@@ -354,13 +354,13 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 
       case VMODE:
       {
-        unsigned int vmArg = 0;
-        ret = copy_from_user(&vmArg, (unsigned int*)arg, sizeof(unsigned int));
-        if(vmArg == GRAPHICS_ON)
+        //unsigned int vmArg = 0;
+        //ret = copy_from_user(&vmArg, (unsigned int*)arg, sizeof(unsigned int));
+        if(int(arg) == GRAPHICS_ON)
         {
           kyouko3_vmode();
         }
-        else if(vmArg == GRAPHICS_OFF)
+        else if(int(arg) == GRAPHICS_OFF)
         {
           kyouko3_fifo_flush();
           K_WRITE_REG(CONFIG_ACC, CONFIG_ACC_DEF);
@@ -381,8 +381,8 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
               //TODO: Handle the failure cases of above calls
           }
          
-          ret = copy_to_user((unsigned long *)&arg, &(dma_buf[0].u_base), sizeof(unsigned long));
-          //*(unsigned long*)arg = dma_buf[0].u_base;
+          //ret = copy_to_user((unsigned long *)&arg, &(dma_buf[0].u_base), sizeof(unsigned long));
+          *(unsigned long*)arg = dma_buf[0].u_base;
 
           //ADDED and Enabled INTERRUPT HANDLER
           ret = pci_enable_msi(kyouko3.kyouko3_pci_dev);
@@ -420,7 +420,9 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
            DEFINE_SPINLOCK(mLock);
            unsigned long flags;
            
-           ret = copy_from_user(&count, (unsigned long*)arg, sizeof(unsigned long));
+           //ret = copy_from_user(&count, (unsigned long*)arg, sizeof(unsigned long));
+           count = *(unsigned long*)arg;
+           printk(KERN_ALERT "[KERNEL] In icotl - START_DMA count is %ul \n", count);
            
            if(count == 0)
                return 0;
@@ -457,8 +459,8 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
            }
            
            //TODO: Copy to user
-           ret = copy_to_user((unsigned long *)&arg, &(dma_buf[kyouko3.dma_fill].u_base), sizeof(unsigned long));
-           
+           //ret = copy_to_user((unsigned long *)&arg, &(dma_buf[kyouko3.dma_fill].u_base), sizeof(unsigned long));
+           *(unsigned long*)arg = dma_buf[kyouko3.dma_fill].u_base;
            break;
       }
   }
