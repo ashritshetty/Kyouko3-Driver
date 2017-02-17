@@ -199,11 +199,11 @@ int kyouko3_release(struct inode *inode, struct file *fp)
 
 int kyouko3_mmap(struct file *fp, struct vm_area_struct *vma)
 {
-  printk(KERN_ALERT "[KERNEL] In kyouko3_mmap \n");
   int ret = -1;
   //unsigned int uid = current->fsuid;
   unsigned int uid = 0;	
   unsigned int offset;
+  printk(KERN_ALERT "[KERNEL] In kyouko3_mmap \n");
   if (uid != 0){
       return ret;
   }
@@ -218,7 +218,7 @@ int kyouko3_mmap(struct file *fp, struct vm_area_struct *vma)
       printk(KERN_ALERT "[KERNEL] Frame buffer mapped \n");
       break;
     default:
-      ret = io_remap_pfn_range(vma, vma->vm_start, (*(dma_buf[kyouko3.curr_dma_mmap_index].p_base))>>PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot);
+      ret = io_remap_pfn_range(vma, vma->vm_start, (dma_buf[kyouko3.curr_dma_mmap_index].p_base)>>PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot);
       //ret = io_remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff, vma->vm_end - vma->vm_start, vma->vm_page_prot);
       printk(KERN_ALERT "[KERNEL] DMA buffer mapped \n");
       break;
@@ -313,9 +313,9 @@ void printDMABuf(void){
     int i = 0;
     while(i < 3)
     {
-        printk(KERN_ALERT "[KERNEL] dma_buf -> k_base addr: %x \n", dma_buf[i].k_base);
+        printk(KERN_ALERT "[KERNEL] dma_buf -> k_base addr: %x \n", *(dma_buf[i].k_base));
         printk(KERN_ALERT "[KERNEL] dma_buf -> p_base addr: %x \n", dma_buf[i].p_base);
-        printk(KERN_ALERT "[KERNEL] dma_buf -> u_base addr: %x \n", dma_buf[i].u_base);
+        printk(KERN_ALERT "[KERNEL] dma_buf -> u_base addr: %x \n", *(dma_buf[i].u_base));
         ++i;
     }
 }
