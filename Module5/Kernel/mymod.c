@@ -309,7 +309,9 @@ void drainDMA(int count){
 }
 
 void printDMABuf(int i){
-  printk(KERN_ALERT "[KERNEL] dma_buf -> k_base addr: %lx \n", *(dma_buf[i].k_base));
+  if(i != 0) return;  
+    
+  printk(KERN_ALERT "[KERNEL] dma_buf -> k_base addr: %p \n", dma_buf[i].k_base);
   printk(KERN_ALERT "[KERNEL] dma_buf -> p_base addr: %lx \n", (unsigned long)dma_buf[i].p_base);
   printk(KERN_ALERT "[KERNEL] dma_buf -> u_base addr: %lx \n", dma_buf[i].u_base);
 }
@@ -345,6 +347,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
   switch(cmd){
       case FIFO_QUEUE:
         ret = copy_from_user(&entry, (struct fifo_entry*)arg, sizeof(struct fifo_entry));
+        printk(KERN_ALERT "[KERNEL] In ioctl - FIFO_QUEUE entry.cmd %x entry.val %x \n", entry.cmd, entry.value);
         FIFO_WRITE(entry.cmd, entry.value);
         break;
 

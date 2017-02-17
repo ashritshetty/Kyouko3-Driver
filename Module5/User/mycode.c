@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
   
   //Calling BIND_DMA
   ioctl(fd, BIND_DMA, &dma_addr);
-  printf("DMA_ADDR: %x \n", dma_addr);
+  printf("DMA_ADDR: %lx \n", dma_addr);
   
   //Writing dma header
   entry.cmd = dma_addr;

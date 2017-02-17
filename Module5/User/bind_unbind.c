@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
   //RAM_SIZE = RAM_SIZE*1024*1024;
   //kyouko3.u_frame_buffer = mmap(0, RAM_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x80000000);
 
-  //ioctl(fd, VMODE, GRAPHICS_ON);
+  ioctl(fd, VMODE, GRAPHICS_ON);
   
   //entry.cmd = RASTER_PRIMITIVE;
   //entry.value = 1;
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
   
   //Calling BIND_DMA
   ioctl(fd, BIND_DMA, &dma_addr);
-  printf("DMA_ADDR: %x", dma_addr);
+  printf("DMA_ADDR: %lx \n", dma_addr);
   
   /*
   //Writing dma header
@@ -157,11 +157,11 @@ int main(int argc, char *argv[])
   ioctl(fd, FIFO_QUEUE, &entry);
   
   ioctl(fd, FIFO_FLUSH, 0);
+*/  
+  sleep(2);
   
-  sleep(5);
-  */
   ioctl(fd, UNBIND_DMA, &dma_addr);
-  //ioctl(fd, VMODE, GRAPHICS_OFF);
+  ioctl(fd, VMODE, GRAPHICS_OFF);
   
   printf("[USER] Closing device : %s\n", DEVICE_FILE_NAME);
   close(fd);
