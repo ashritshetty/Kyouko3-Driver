@@ -326,14 +326,14 @@ irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
 
   if(kyouko3.dma_fill == kyouko3.dma_drain && kyouko3.isQueueFull == 1 && kyouko3.suspend_phase == 0)
   {
-      kyouko3.dma_drain = (kyouko3.dma_fill+1)%NUM_DMA_BUF;;
+      kyouko3.dma_drain = (kyouko3.dma_drain+1)%NUM_DMA_BUF;;
       drainDMA(dma_buf[kyouko3.dma_drain].count);
       wake_up_interruptible(&dma_snooze);
       kyouko3.isQueueFull = 0;
   }
   else if(kyouko3.dma_fill != kyouko3.dma_drain)
   {
-      kyouko3.dma_drain = (kyouko3.dma_fill+1)%NUM_DMA_BUF;;
+      kyouko3.dma_drain = (kyouko3.dma_drain+1)%NUM_DMA_BUF;;
       drainDMA(dma_buf[kyouko3.dma_drain].count);
   }
 
