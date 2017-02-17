@@ -304,7 +304,7 @@ void kyouko3_vmode(void)
 
 void drainDMA(int count){
     
-   printk(KERN_ALERT "[KERNEL] In drainDMA - Draining the buf %lx\n", dma_buf[kyouko3.dma_drain].p_base);
+   printk(KERN_ALERT "[KERNEL] In drainDMA - Draining the buf %lx\n", (unsigned long)dma_buf[kyouko3.dma_drain].p_base);
    
    FIFO_WRITE(DMA_BUF_ADDR_A, (dma_buf[kyouko3.dma_drain].p_base));
    FIFO_WRITE(DMA_BUF_CONF_A, count);
