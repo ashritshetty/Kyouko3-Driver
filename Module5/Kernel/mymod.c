@@ -402,10 +402,11 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 
       case START_DMA:
       {
+           unsigned int count = 0;
            DEFINE_SPINLOCK(mLock);
            unsigned long flags;
-           unsigned int count = *((unsigned int*)arg);
-
+           ret = copy_from_user(&count, (unsigned long*)arg, sizeof(unsigned long));
+           
            if(count == 0)
                return 0;
 
