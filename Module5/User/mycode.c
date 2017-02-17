@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
   
   ioctl(fd, FIFO_FLUSH, 0);
   
-  sleep(10);
+  sleep(5);
   
   ioctl(fd, UNBIND_DMA, &dma_addr);
   ioctl(fd, VMODE, GRAPHICS_OFF);
