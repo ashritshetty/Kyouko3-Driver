@@ -423,8 +423,8 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
            DEFINE_SPINLOCK(mLock);
            unsigned long flags;
            
-           //ret = copy_from_user(&count, (unsigned long*)arg, sizeof(unsigned long));
-           count = *(unsigned long*)arg;
+           ret = copy_from_user(&count, (unsigned long*)arg, sizeof(unsigned long));
+           //count = *(unsigned long*)arg;
            printk(KERN_ALERT "[KERNEL] In icotl - START_DMA count is %lu \n", count);
            
            if(count == 0)

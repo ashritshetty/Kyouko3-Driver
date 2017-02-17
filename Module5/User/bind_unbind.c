@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
   //ioctl(fd, FIFO_QUEUE, &entry);
   
   //Calling BIND_DMA
-  ioctl(fd, BIND_DMA, &dma_addr);
+  ret = ioctl(fd, BIND_DMA, &dma_addr);
   printf("DMA_ADDR: %lx \n", dma_addr);
   
   /*
@@ -160,7 +160,9 @@ int main(int argc, char *argv[])
 */  
   sleep(2);
   
-  ioctl(fd, UNBIND_DMA, &dma_addr);
+  if(ret == 0){
+    ioctl(fd, UNBIND_DMA, &dma_addr);    
+  }
   ioctl(fd, VMODE, GRAPHICS_OFF);
   
   printf("[USER] Closing device : %s\n", DEVICE_FILE_NAME);
