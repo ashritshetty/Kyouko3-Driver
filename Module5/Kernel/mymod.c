@@ -314,8 +314,8 @@ void printDMABuf(void){
     while(i < 3)
     {
         printk(KERN_ALERT "[KERNEL] dma_buf -> k_base addr: %lx \n", *(dma_buf[i].k_base));
-        printk(KERN_ALERT "[KERNEL] dma_buf -> p_base addr: %lx \n", dma_buf[i].p_base);
-        printk(KERN_ALERT "[KERNEL] dma_buf -> u_base addr: %lx \n", *(dma_buf[i].u_base));
+        printk(KERN_ALERT "[KERNEL] dma_buf -> p_base addr: %lx \n", (unsigned long)dma_buf[i].p_base);
+        printk(KERN_ALERT "[KERNEL] dma_buf -> u_base addr: %lx \n", dma_buf[i].u_base);
         ++i;
     }
 }
