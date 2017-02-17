@@ -353,6 +353,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
         break;
 
       case VMODE:
+      {
         unsigned int vmArg = 0;
         ret = copy_from_user(&vmArg, (unsigned int*)arg, sizeof(unsigned int));
         if(vmArg == GRAPHICS_ON)
@@ -368,6 +369,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
           msleep(10);
         }
         break;
+      }
 
       case BIND_DMA:
           for(i = 0; i < NUM_DMA_BUF; ++i)
