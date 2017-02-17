@@ -106,7 +106,6 @@ int main(int argc, char *argv[])
   ret = ioctl(fd, BIND_DMA, &dma_addr);
   printf("DMA_ADDR: %lx \n", dma_addr);
   
-  /*
   //Writing dma header
   entry.cmd = dma_addr;
   entry.value = *(unsigned int*)&k_dma_header;
@@ -148,7 +147,7 @@ int main(int argc, char *argv[])
     ioctl(fd, FIFO_QUEUE, &entry);
   }
 
-  dma_addr = 72;
+  dma_addr = 76;
   ioctl(fd, START_DMA, &dma_addr);
   
   //Write 0 to flush register
@@ -157,7 +156,7 @@ int main(int argc, char *argv[])
   ioctl(fd, FIFO_QUEUE, &entry);
   
   ioctl(fd, FIFO_FLUSH, 0);
-*/  
+  
   sleep(2);
   
   if(ret == 0){

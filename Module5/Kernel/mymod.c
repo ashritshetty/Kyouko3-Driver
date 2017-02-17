@@ -389,12 +389,12 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
               dma_buf[i].k_base = pci_alloc_consistent(kyouko3.kyouko3_pci_dev, DMA_BUF_SIZE, &dma_buf[i].p_base);
               kyouko3.curr_dma_mmap_index = i;
               dma_buf[i].u_base = vm_mmap(fp, 0, DMA_BUF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, 0x10000000);
-              //printDMABuf(i);
+              printDMABuf(i);
               //TODO: Handle the failure cases of above calls
           }
          
-          //ret = copy_to_user((unsigned long *)&arg, &(dma_buf[0].u_base), sizeof(unsigned long));
-          *(unsigned long*)arg = dma_buf[0].u_base;
+          ret = copy_to_user((void __user*)arg, &(dma_buf[0].u_base), sizeof(unsigned long));
+          //*(unsigned long*)arg = dma_buf[0].u_base;
 
           //ADDED and Enabled INTERRUPT HANDLER
           ret = pci_enable_msi(kyouko3.kyouko3_pci_dev);
@@ -473,8 +473,8 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
            }
            
            //TODO: Copy to user
-           //ret = copy_to_user((unsigned long *)&arg, &(dma_buf[kyouko3.dma_fill].u_base), sizeof(unsigned long));
-           *(unsigned long*)arg = dma_buf[kyouko3.dma_fill].u_base;
+           ret = copy_to_user((void __user*)arg, &(dma_buf[kyouko3.dma_fill].u_base), sizeof(unsigned long));
+           //*(unsigned long*)arg = dma_buf[kyouko3.dma_fill].u_base;
            break;
       }
   }
