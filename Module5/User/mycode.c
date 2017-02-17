@@ -66,11 +66,10 @@ int main(int argc, char *argv[])
   struct fifo_entry entry;
   unsigned long dma_addr;
   
-  struct kyuoko3_dma_header k_dma_header= {
-      .address = 0x1045,
-      .count = 0x3,
-      .opCode = 0x14
-  }; 
+  struct kyuoko3_dma_header k_dma_header;
+  k_dma_header.address = 0x1045;
+  k_dma_header.count = 0x0003;
+  k_dma_header.opCode = 0x0014;
   
   float x[3] = {0.0, -0.5, 0.5};
   float y[3] = {-0.5, 0.2, 0.2};
@@ -146,7 +145,6 @@ int main(int argc, char *argv[])
     entry.cmd = dma_addr+0x0014;
     entry.value = *(unsigned int*)&z[i];
     ioctl(fd, FIFO_QUEUE, &entry);
-
   }
 
   ioctl(fd, START_DMA, &dma_addr);
