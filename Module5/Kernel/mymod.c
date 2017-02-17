@@ -321,22 +321,28 @@ irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
   unsigned int iflags;
   iflags = K_READ_REG(INTR_STATUS);
   K_WRITE_REG(INTR_STATUS, (iflags & 0xf));
+  
+  printk(KERN_ALERT "[KERNEL] In dma interrupt handler \n");
+  
   if((iflags & 0x02) == 0)
     return IRQ_NONE;
 
   if(kyouko3.dma_fill == kyouko3.dma_drain && kyouko3.isQueueFull == 1 && kyouko3.suspend_phase == 0)
   {
-      kyouko3.dma_drain = (kyouko3.dma_drain+1)%NUM_DMA_BUF;;
+      printk(KERN_ALERT "[KERNEL] In dma interrupt handler Full drain\n");
+      kyouko3.dma_drain = (kyouko3.dma_drain+1)%NUM_DMA_BUF;
       drainDMA(dma_buf[kyouko3.dma_drain].count);
       wake_up_interruptible(&dma_snooze);
       kyouko3.isQueueFull = 0;
   }
   else if(kyouko3.dma_fill != kyouko3.dma_drain)
   {
-      kyouko3.dma_drain = (kyouko3.dma_drain+1)%NUM_DMA_BUF;;
+      printk(KERN_ALERT "[KERNEL] In dma interrupt handler Non Full drain\n");
+      kyouko3.dma_drain = (kyouko3.dma_drain+1)%NUM_DMA_BUF;
       drainDMA(dma_buf[kyouko3.dma_drain].count);
   }
 
+  printk(KERN_ALERT "[KERNEL] In End dma interrupt handler\n");
   return IRQ_HANDLED;
 }
 
