@@ -434,7 +434,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
            
            ret = copy_from_user(&count, (unsigned int*)arg, sizeof(unsigned int));
            //count = *(unsigned long*)arg;
-           printk(KERN_ALERT "[KERNEL] In icotl - START_DMA count is %lu \n", count);
+           printk(KERN_ALERT "[KERNEL] In icotl - START_DMA count is %u \n", count);
            
            if(count == 0)
                return 0;
