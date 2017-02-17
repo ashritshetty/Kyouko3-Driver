@@ -46,7 +46,7 @@ struct kyouko3_dma_header{
     unsigned int address : 14;
     unsigned int count : 10;
     unsigned int opCode : 8;
-}kyuoko3_dma_header;
+}k_dma_header;
 
 unsigned int U_READ_REG(unsigned int reg)
 {
@@ -66,7 +66,6 @@ int main(int argc, char *argv[])
   struct fifo_entry entry;
   unsigned long dma_addr;
   
-  struct kyuoko3_dma_header k_dma_header;
   k_dma_header.address = 0x1045;
   k_dma_header.count = 0x0003;
   k_dma_header.opCode = 0x0014;
