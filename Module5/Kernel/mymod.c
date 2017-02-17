@@ -303,6 +303,9 @@ void kyouko3_vmode(void)
 }
 
 void drainDMA(int count){
+    
+   printk(KERN_ALERT "[KERNEL] In drainDMA - Draining the buf %lx\n", dma_buf[kyouko3.dma_drain].p_base);
+   
    FIFO_WRITE(DMA_BUF_ADDR_A, (dma_buf[kyouko3.dma_drain].p_base));
    FIFO_WRITE(DMA_BUF_CONF_A, count);
    sync_kick_fifo();
@@ -353,7 +356,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
   switch(cmd){
       case FIFO_QUEUE:
         ret = copy_from_user(&entry, (struct fifo_entry*)arg, sizeof(struct fifo_entry));
-        printk(KERN_ALERT "[KERNEL] In ioctl - FIFO_QUEUE entry.cmd %x entry.val %x \n", entry.cmd, entry.value);
+        //printk(KERN_ALERT "[KERNEL] In ioctl - FIFO_QUEUE entry.cmd %x entry.val %x \n", entry.cmd, entry.value);
         FIFO_WRITE(entry.cmd, entry.value);
         break;
 
@@ -443,6 +446,8 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
                //Queue is empty at this point
                //local_irq_restore(flags);
                spin_unlock_irqrestore(&mLock, flags);
+               
+               printk(KERN_ALERT "[KERNEL] In icotl - START_DMA FILL == DRAIN \n");
                
                kyouko3.dma_fill = (kyouko3.dma_fill+1)%NUM_DMA_BUF;
                drainDMA(count);
