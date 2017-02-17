@@ -29,7 +29,7 @@
 #define GRAPHICS_ON 1
 #define GRAPHICS_OFF 0
 
-#define DMA_HEADER_SZ 0x0020
+#define DMA_HEADER_SZ 0x0004
 
 struct fifo_entry{
     unsigned int cmd;
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
     ioctl(fd, FIFO_QUEUE, &entry);
   }
 
-  dma_addr = 13;
+  dma_addr = 72;
   ioctl(fd, START_DMA, &dma_addr);
   
   //Write 0 to flush register
