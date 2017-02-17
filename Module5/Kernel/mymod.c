@@ -200,10 +200,10 @@ int kyouko3_release(struct inode *inode, struct file *fp)
 int kyouko3_mmap(struct file *fp, struct vm_area_struct *vma)
 {
   int ret = -1;
+  //TODO: INCLUDE PROPER HEADER
   //unsigned int uid = current->fsuid;
   unsigned int uid = 0;	
   unsigned int offset;
-  printk(KERN_ALERT "[KERNEL] In kyouko3_mmap \n");
   if (uid != 0){
       return ret;
   }
@@ -219,7 +219,6 @@ int kyouko3_mmap(struct file *fp, struct vm_area_struct *vma)
       break;
     default:
       ret = io_remap_pfn_range(vma, vma->vm_start, (dma_buf[kyouko3.curr_dma_mmap_index].p_base)>>PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot);
-      //ret = io_remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff, vma->vm_end - vma->vm_start, vma->vm_page_prot);
       printk(KERN_ALERT "[KERNEL] DMA buffer mapped \n");
       break;
   }
@@ -354,6 +353,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
         break;
 
       case VMODE:
+         //TODO: Copy From user
         if((int)arg == GRAPHICS_ON)
         {
           kyouko3_vmode();
@@ -371,15 +371,13 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
       case BIND_DMA:
           for(i = 0; i < NUM_DMA_BUF; ++i)
           {
-              //printDMABuf();
               dma_buf[i].k_base = pci_alloc_consistent(kyouko3.kyouko3_pci_dev, DMA_BUF_SIZE, &dma_buf[i].p_base);
-              printDMABuf(i);
               kyouko3.curr_dma_mmap_index = i;
-              dma_buf[i].u_base = vm_mmap(fp, 0, DMA_BUF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, 0x1);
-              //dma_buf[i].u_base = vm_mmap(fp, dma_buf[i].p_base, DMA_BUF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, 0x1);
-              printDMABuf(i);
+              dma_buf[i].u_base = vm_mmap(fp, 0, DMA_BUF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, 0x10000000);
+              //printDMABuf(i);
               //TODO: Handle the failure cases of above calls
           }
+          //TODO: Copy to user
           *(unsigned long*)arg = dma_buf[0].u_base;
 
           //ADD and Enable INTERRUPT HANDLER
@@ -417,8 +415,9 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
            unsigned int count = 0;
            DEFINE_SPINLOCK(mLock);
            unsigned long flags;
-           count = *(unsigned long*)arg;
-           //ret = copy_from_user(&count, (unsigned long*)arg, sizeof(unsigned long));
+           
+           //count = *(unsigned long*)arg;
+           ret = copy_from_user(&count, (unsigned long*)arg, sizeof(unsigned long));
            
            if(count == 0)
                return 0;
@@ -454,6 +453,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
                wait_event_interruptible(dma_snooze, kyouko3.dma_fill != kyouko3.dma_drain);
            }
            
+           //TODO: Copy to user
            *(unsigned long*)arg = dma_buf[kyouko3.dma_fill].u_base;
            break;
       }
