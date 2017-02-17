@@ -303,7 +303,7 @@ void kyouko3_vmode(void)
 }
 
 void drainDMA(int count){
-   FIFO_WRITE(DMA_BUF_ADDR_A, *(dma_buf[kyouko3.dma_drain].k_base));
+   FIFO_WRITE(DMA_BUF_ADDR_A, (dma_buf[kyouko3.dma_drain].p_base));
    FIFO_WRITE(DMA_BUF_CONF_A, count);
    sync_kick_fifo(); 
 }
