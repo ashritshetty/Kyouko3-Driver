@@ -120,7 +120,7 @@ struct kyouko3 {
 }kyouko3;
 
 //Creating Pool of 8 DMA buf
-struct dma_addr dma_buf[8];
+struct dma_addr dma_buf[8] = {{0}};
 
 struct pci_device_id kyouko3_dev_ids[] = {
   {PCI_DEVICE(PCI_VENDOR_ID_CCORSI, PCI_DEVICE_ID_CCORSI_KYOUKO3)},
@@ -307,6 +307,17 @@ void drainDMA(int count){
    sync_kick_fifo(); 
 }
 
+void printDMABuf(void){
+    int i = 0;
+    while(i < 3)
+    {
+        printk(KERN_ALERT "[KERNEL] dma_buf -> k_base addr: %x \n", dma_buf[i].k_base);
+        printk(KERN_ALERT "[KERNEL] dma_buf -> p_base addr: %x \n", dma_buf[i].p_base);
+        printk(KERN_ALERT "[KERNEL] dma_buf -> u_base addr: %x \n", dma_buf[i].u_base);
+        ++i;
+    }
+}
+
 irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
 {
   unsigned int iflags;
@@ -363,9 +374,12 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
       case BIND_DMA:
           for(i = 0; i < NUM_DMA_BUF; ++i)
           {
+              printDMABuf();
               dma_buf[i].k_base = pci_alloc_consistent(kyouko3.kyouko3_pci_dev, DMA_BUF_SIZE, &dma_buf[i].p_base);
+              printDMABuf();
               kyouko3.curr_dma_mmap_index = i;
               dma_buf[i].u_base = vm_mmap(fp, 0, DMA_BUF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, 0x1);
+              printDMABuf();
               //TODO: Handle the failure cases of above calls
           }
           *(unsigned long*)arg = dma_buf[0].u_base;
