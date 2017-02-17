@@ -93,7 +93,7 @@ struct fifo{
 struct dma_addr{
     dma_addr_t p_base;
     unsigned long* k_base;
-    unsigned long* u_base;
+    unsigned long u_base;
     unsigned int count;
 }dma_addr;
 
@@ -217,7 +217,7 @@ int kyouko3_mmap(struct file *fp, struct vm_area_struct *vma)
       printk(KERN_ALERT "[KERNEL] Frame buffer mapped \n");
       break;
     default:
-      ret = io_remap_pfn_range(vma, vma->vm_start, (unsigned long)*(dma_buf[kyouko3.curr_dma_mmap_index].k_base)>>PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot);
+      ret = io_remap_pfn_range(vma, vma->vm_start, (*(dma_buf[kyouko3.curr_dma_mmap_index].k_base))>>PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot);
       printk(KERN_ALERT "[KERNEL] DMA buffer mapped \n");
       break;
   }
@@ -365,10 +365,10 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
           {
               dma_buf[i].k_base = pci_alloc_consistent(kyouko3.kyouko3_pci_dev, DMA_BUF_SIZE, &dma_buf[i].p_base);
               kyouko3.curr_dma_mmap_index = i;
-              *dma_buf[i].u_base = vm_mmap(fp, 0, DMA_BUF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, 0x1);
+              dma_buf[i].u_base = vm_mmap(fp, 0, DMA_BUF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, 0x1);
               //TODO: Handle the failure cases of above calls
           }
-          *(unsigned long*)arg = *(dma_buf[0].u_base);
+          *(unsigned long*)arg = dma_buf[0].u_base;
 
           //ADD and Enable INTERRUPT HANDLER
           ret = pci_enable_msi(kyouko3.kyouko3_pci_dev);
@@ -392,7 +392,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
       case UNBIND_DMA:
           for(i = 0; i < NUM_DMA_BUF; ++i)
           {
-            vm_munmap(*(dma_buf[i].u_base), DMA_BUF_SIZE);
+            vm_munmap(dma_buf[i].u_base, DMA_BUF_SIZE);
             pci_free_consistent(kyouko3.kyouko3_pci_dev, DMA_BUF_SIZE, dma_buf[i].k_base, dma_buf[i].p_base);
           }
           K_WRITE_REG(INTR_SET, 0x0);
@@ -440,7 +440,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
                wait_event_interruptible(dma_snooze, kyouko3.dma_fill != kyouko3.dma_drain);
            }
            
-           *(unsigned long*)arg = *(dma_buf[kyouko3.dma_fill].u_base);
+           *(unsigned long*)arg = dma_buf[kyouko3.dma_fill].u_base;
            break;
       }
   }
