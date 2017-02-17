@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
   int ret, i;
   unsigned int RAM_SIZE;
   struct fifo_entry entry;
-  unsigned long dma_addr;
+  unsigned long dma_addr = 0;
   
   k_dma_header.address = 0x1045;
   k_dma_header.count = 0x0003;
@@ -104,17 +104,18 @@ int main(int argc, char *argv[])
   
   //Calling BIND_DMA
   ioctl(fd, BIND_DMA, &dma_addr);
+  printf("DMA_ADDR: %x", dma_addr);
   
+  //Writing dma header
+  entry.cmd = dma_addr;
+  entry.value = *(unsigned int*)&k_dma_header;
+  ioctl(fd, FIFO_QUEUE, &entry); 
+  
+  dma_addr = dma_addr + DMA_HEADER_SZ;
+  
+  //Format is BGRXYZ  
   for(i = 0; i < 3; i++)
-  {
-    //Writing dma header
-    entry.cmd = dma_addr;
-    entry.value = *(unsigned int*)&k_dma_header;
-    ioctl(fd, FIFO_QUEUE, &entry);  
-      
-    //Format is BGRXYZ  
-    dma_addr = dma_addr + DMA_HEADER_SZ;
-    
+  {     
     //Writing blue color
     entry.cmd = dma_addr;
     entry.value = *(unsigned int*)&b[i];
@@ -146,6 +147,7 @@ int main(int argc, char *argv[])
     ioctl(fd, FIFO_QUEUE, &entry);
   }
 
+  dma_addr = 13;
   ioctl(fd, START_DMA, &dma_addr);
   
   //Write 0 to flush register
