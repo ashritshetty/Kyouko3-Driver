@@ -356,11 +356,11 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
       {
         //unsigned int vmArg = 0;
         //ret = copy_from_user(&vmArg, (unsigned int*)arg, sizeof(unsigned int));
-        if(int(arg) == GRAPHICS_ON)
+        if((int)arg == GRAPHICS_ON)
         {
           kyouko3_vmode();
         }
-        else if(int(arg) == GRAPHICS_OFF)
+        else if((int)arg == GRAPHICS_OFF)
         {
           kyouko3_fifo_flush();
           K_WRITE_REG(CONFIG_ACC, CONFIG_ACC_DEF);
@@ -422,7 +422,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
            
            //ret = copy_from_user(&count, (unsigned long*)arg, sizeof(unsigned long));
            count = *(unsigned long*)arg;
-           printk(KERN_ALERT "[KERNEL] In icotl - START_DMA count is %ul \n", count);
+           printk(KERN_ALERT "[KERNEL] In icotl - START_DMA count is %lu \n", count);
            
            if(count == 0)
                return 0;
