@@ -353,12 +353,13 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
         break;
 
       case VMODE:
-         //TODO: Copy From user
-        if((int)arg == GRAPHICS_ON)
+        unsigned int vmArg = 0;
+        ret = copy_from_user(&vmArg, (unsigned int*)arg, sizeof(unsigned int));
+        if(vmArg == GRAPHICS_ON)
         {
           kyouko3_vmode();
         }
-        else if((int)arg == GRAPHICS_OFF)
+        else if(vmArg == GRAPHICS_OFF)
         {
           kyouko3_fifo_flush();
           K_WRITE_REG(CONFIG_ACC, CONFIG_ACC_DEF);
@@ -377,10 +378,11 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
               //printDMABuf(i);
               //TODO: Handle the failure cases of above calls
           }
-          //TODO: Copy to user
-          *(unsigned long*)arg = dma_buf[0].u_base;
+         
+          ret = copy_to_user((unsigned long *)&arg, &(dma_buf[0].u_base), sizeof(unsigned long));
+          //*(unsigned long*)arg = dma_buf[0].u_base;
 
-          //ADD and Enable INTERRUPT HANDLER
+          //ADDED and Enabled INTERRUPT HANDLER
           ret = pci_enable_msi(kyouko3.kyouko3_pci_dev);
           if(ret != 0)
           {
@@ -412,11 +414,10 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 
       case START_DMA:
       {
-           unsigned int count = 0;
+           unsigned long count = 0;
            DEFINE_SPINLOCK(mLock);
            unsigned long flags;
            
-           //count = *(unsigned long*)arg;
            ret = copy_from_user(&count, (unsigned long*)arg, sizeof(unsigned long));
            
            if(count == 0)
@@ -454,7 +455,8 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
            }
            
            //TODO: Copy to user
-           *(unsigned long*)arg = dma_buf[kyouko3.dma_fill].u_base;
+           ret = copy_to_user((unsigned long *)&arg, &(dma_buf[kyouko3.dma_fill].u_base), sizeof(unsigned long));
+           
            break;
       }
   }
