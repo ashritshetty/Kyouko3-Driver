@@ -140,12 +140,14 @@ int main(int argc, char *argv[])
     dma_addr = 76;
     ioctl(fd, START_DMA, &dma_addr);
     temp_addr = (unsigned int*)dma_addr;
-  }
+
+    printf("DMA_ADDRI: %x   %p \n", *temp_addr, temp_addr);    
   
-  //Write 0 to flush register
-  entry.cmd = FIFO_FLUSH_REG;
-  entry.value = 0;
-  ioctl(fd, FIFO_QUEUE, &entry);
+    //Write 0 to flush register
+    entry.cmd = FIFO_FLUSH_REG;
+    entry.value = 0;
+    ioctl(fd, FIFO_QUEUE, &entry);
+  }
   
   ioctl(fd, FIFO_FLUSH, 0);
 
