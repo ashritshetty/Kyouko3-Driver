@@ -122,19 +122,19 @@ int main(int argc, char *argv[])
     *temp_addr = *(unsigned int*)&g[i];
         
     //Writing red color
-    temp_addr += 0x0008;
+    temp_addr += 0x0004;
     *temp_addr = *(unsigned int*)&r[i];
       
     //Writing X-coord
-    temp_addr += 0x000c;
+    temp_addr += 0x0004;
     *temp_addr = *(unsigned int*)&x[i];
     
     //Writing Y-coord
-    temp_addr += 0x0010;
+    temp_addr += 0x0004;
     *temp_addr = *(unsigned int*)&y[i];
     
     //Writing Z-coord
-    temp_addr += 0x0014;
+    temp_addr += 0x0004;
     *temp_addr = *(unsigned int*)&z[i];
   }
 
