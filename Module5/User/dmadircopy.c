@@ -58,19 +58,8 @@ void U_WRITE_FB(unsigned int reg, unsigned int value)
   *(kyouko3.u_frame_buffer+(reg)) = value;
 }
 
-int main(int argc, char *argv[])
+void fillTriangle(unsigned int* temp_addr, int factor)
 {
-  int fd;
-  int ret, i;
-  unsigned int RAM_SIZE;
-  struct fifo_entry entry;
-  unsigned long dma_addr = 0;
-  unsigned int* temp_addr;
-  
-  k_dma_header.address = 0x1045;
-  k_dma_header.count = 0x0003;
-  k_dma_header.opCode = 0x0014;
-  
   float x[3] = {0.0, -0.5, 0.5};
   float y[3] = {-0.5, 0.2, 0.2};
   float z[3] = {0.0, 0.0, 0.0};
@@ -79,43 +68,10 @@ int main(int argc, char *argv[])
   float r[3] = {1.0, 0.0, 0.0};
   float b[3] = {0.0, 1.0, 0.0};
   float g[3] = {0.0, 0.0, 1.0};
-  float a[3] = {0.0, 0.0, 0.0};
-  
-  printf("[USER] Opening device : %s\n", DEVICE_FILE_NAME);
-  fd = open(DEVICE_FILE_NAME, O_RDWR);
-  if(fd < 0)
-  {
-    printf("[USER] Cannot open device : %s\n", DEVICE_FILE_NAME);
-    return 0;
-  }
-  
-  //kyouko3.u_control_base = mmap(0, KYOUKO3_CONTROL_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
-  
-  //RAM_SIZE = U_READ_REG(DEVICE_RAM);
-  //printf("[USER] Ram size in MB is: %d \n", RAM_SIZE);
-  
-  //RAM_SIZE = RAM_SIZE*1024*1024;
-  //kyouko3.u_frame_buffer = mmap(0, RAM_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0x80000000);
-
-  ioctl(fd, VMODE, GRAPHICS_ON);
-  
-  //entry.cmd = RASTER_PRIMITIVE;
-  //entry.value = 1;
-  //ioctl(fd, FIFO_QUEUE, &entry);
-  
-  printf("DMA_ADDR1: %x   %p \n", *temp_addr, temp_addr);
-  //Calling BIND_DMA
-  ret = ioctl(fd, BIND_DMA, &dma_addr);
-  temp_addr = (unsigned int*)dma_addr;
-  printf("DMA_ADDR2: %x   %p \n", *temp_addr, temp_addr);
-  
-  //Writing dma header
-  *temp_addr = *(unsigned int*)&k_dma_header;
-  temp_addr++;         // = temp_addr + DMA_HEADER_SZ;
-  
-  printf("DMA_ADDR3: %x  %p \n", *temp_addr, temp_addr);
-
-  //Format is BGRXYZ  
+  float a[3] = {0.0, 0.0, 0.0};  
+    
+  int i;
+  //Format is BGRXYZ
   for(i = 0; i < 3; i++)
   {     
     //Writing blue color
@@ -131,20 +87,60 @@ int main(int argc, char *argv[])
     temp_addr++;
       
     //Writing X-coord
-    *temp_addr = *(unsigned int*)&x[i];
+    *temp_addr = *(unsigned int*)&x[i] * factor;
     temp_addr++;
     
     //Writing Y-coord
-    *temp_addr = *(unsigned int*)&y[i];
+    *temp_addr = *(unsigned int*)&y[i] * factor;
     temp_addr++;
     
     //Writing Z-coord
-    *temp_addr = *(unsigned int*)&z[i];
+    *temp_addr = *(unsigned int*)&z[i] * factor;
     temp_addr++;
+  }    
+}
+
+int main(int argc, char *argv[])
+{
+  int fd;
+  int ret, i;
+  unsigned int RAM_SIZE;
+  struct fifo_entry entry;
+  unsigned long dma_addr = 0;
+  unsigned int* temp_addr;
+  
+  k_dma_header.address = 0x1045;
+  k_dma_header.count = 0x0003;
+  k_dma_header.opCode = 0x0014;
+  
+  int arr[] = {1, -1};
+  
+  printf("[USER] Opening device : %s\n", DEVICE_FILE_NAME);
+  fd = open(DEVICE_FILE_NAME, O_RDWR);
+  if(fd < 0)
+  {
+    printf("[USER] Cannot open device : %s\n", DEVICE_FILE_NAME);
+    return 0;
   }
 
-  dma_addr = 76;
-  ioctl(fd, START_DMA, &dma_addr);
+  ioctl(fd, VMODE, GRAPHICS_ON);
+  
+  //Calling BIND_DMA
+  ret = ioctl(fd, BIND_DMA, &dma_addr);
+  temp_addr = (unsigned int*)dma_addr;
+  printf("DMA_ADDR2: %x   %p \n", *temp_addr, temp_addr);
+  
+  for(i = 0; i < 2; ++i)
+  {
+    //Writing dma header
+    *temp_addr = *(unsigned int*)&k_dma_header;
+    temp_addr++;  
+    
+    fillTriangle(temp_addr, arr[i]);
+    dma_addr = 76;
+    ioctl(fd, START_DMA, &dma_addr);
+    temp_addr = (unsigned int*)dma_addr;
+  }
   
   //Write 0 to flush register
   entry.cmd = FIFO_FLUSH_REG;
