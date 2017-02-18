@@ -451,6 +451,10 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
                kyouko3.dma_fill = (kyouko3.dma_fill+1)%NUM_DMA_BUF;
                drainDMA(count);
                kyouko3.isQueueFull = 0;
+               
+               printDMABuf(kyouko3.dma_fill);
+               //TODO: Copy to user
+               ret = copy_to_user((void __user*)arg, &(dma_buf[kyouko3.dma_fill].u_base), sizeof(unsigned long));
                return 0;
            }
 
