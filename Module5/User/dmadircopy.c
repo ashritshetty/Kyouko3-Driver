@@ -87,15 +87,18 @@ void fillTriangle(unsigned int* temp_addr, int factor)
     temp_addr++;
       
     //Writing X-coord
-    *temp_addr = *(unsigned int*)&x[i] * factor;
+    x[i] *= factor;
+    *temp_addr = *(unsigned int*)&x[i];
     temp_addr++;
     
     //Writing Y-coord
-    *temp_addr = *(unsigned int*)&y[i] * factor;
+    y[i] *= factor;
+    *temp_addr = *(unsigned int*)&y[i];
     temp_addr++;
     
     //Writing Z-coord
-    *temp_addr = *(unsigned int*)&z[i] * factor;
+    z[i] *= factor;
+    *temp_addr = *(unsigned int*)&z[i];
     temp_addr++;
   }    
 }
@@ -128,7 +131,7 @@ int main(int argc, char *argv[])
   //Calling BIND_DMA
   ret = ioctl(fd, BIND_DMA, &dma_addr);
   temp_addr = (unsigned int*)dma_addr;
-  printf("DMA_ADDR2: %x   %p \n", *temp_addr, temp_addr);
+  printf("DMA_ADDR2: %x   %p \n", temp_addr, temp_addr);
   
   for(i = 0; i < 2; ++i)
   {
@@ -141,7 +144,7 @@ int main(int argc, char *argv[])
     ioctl(fd, START_DMA, &dma_addr);
     temp_addr = (unsigned int*)dma_addr;
 
-    printf("DMA_ADDRI: %x   %p \n", *temp_addr, temp_addr);    
+    printf("DMA_ADDRI: %x   %p \n", temp_addr, temp_addr);    
   
     //Write 0 to flush register
     entry.cmd = FIFO_FLUSH_REG;
