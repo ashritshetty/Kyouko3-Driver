@@ -312,8 +312,6 @@ void drainDMA(int count){
 }
 
 void printDMABuf(int i){
-  if(i != 0) return;  
-    
   printk(KERN_ALERT "[KERNEL] dma_buf -> k_base addr: %p \n", dma_buf[i].k_base);
   printk(KERN_ALERT "[KERNEL] dma_buf -> p_base addr: %lx \n", (unsigned long)dma_buf[i].p_base);
   printk(KERN_ALERT "[KERNEL] dma_buf -> u_base addr: %lx \n", dma_buf[i].u_base);
@@ -389,10 +387,11 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
               dma_buf[i].k_base = pci_alloc_consistent(kyouko3.kyouko3_pci_dev, DMA_BUF_SIZE, &dma_buf[i].p_base);
               kyouko3.curr_dma_mmap_index = i;
               dma_buf[i].u_base = vm_mmap(fp, 0, DMA_BUF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, 0x10000000);
-              printDMABuf(i);
+              //printDMABuf(i);
               //TODO: Handle the failure cases of above calls
           }
          
+          printDMABuf(0);
           ret = copy_to_user((void __user*)arg, &(dma_buf[0].u_base), sizeof(unsigned long));
           //*(unsigned long*)arg = dma_buf[0].u_base;
 
@@ -472,6 +471,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
                wait_event_interruptible(dma_snooze, kyouko3.dma_fill != kyouko3.dma_drain);
            }
            
+           printDMABuf(kyouko3.dma_fill);
            //TODO: Copy to user
            ret = copy_to_user((void __user*)arg, &(dma_buf[kyouko3.dma_fill].u_base), sizeof(unsigned long));
            //*(unsigned long*)arg = dma_buf[kyouko3.dma_fill].u_base;
