@@ -320,6 +320,9 @@ void printDMABuf(int i){
 irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
 {
   unsigned int iflags;
+  DEFINE_SPINLOCK(mLock);
+  unsigned long flags;
+  
   iflags = K_READ_REG(INTR_STATUS);
   K_WRITE_REG(INTR_STATUS, (iflags & 0xf));
   
@@ -329,16 +332,22 @@ irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
     return IRQ_NONE;
 
   kyouko3.dma_drain = (kyouko3.dma_drain+1)%NUM_DMA_BUF;
-  if(kyouko3.dma_fill == kyouko3.dma_drain && kyouko3.isQueueFull == 1 && kyouko3.suspend_phase == 0)
+  
+  while(kyouko3.suspend_phase == 1);
+  
+  spin_lock_irqsave(&mLock, flags);
+  if(kyouko3.isQueueFull == 1)  //kyouko3.suspend_phase == 0
   {
-      printk(KERN_ALERT "[KERNEL] In dma interrupt handler Full drain\n");
-      drainDMA(dma_buf[kyouko3.dma_drain].count);
+      printk(KERN_ALERT "[KERNEL] In dma interrupt handler drain\n");
       wake_up_interruptible(&dma_snooze);
       kyouko3.isQueueFull = 0;
   }
-  else if(abs(kyouko3.dma_fill - kyouko3.dma_drain) > 1)
+  spin_unlock_irqrestore(&mLock, flags);
+  
+  //TODO: CHECK IF HAVE TO ADD COUNT
+  if(kyouko3.dma_fill != kyouko3.dma_drain)
   {
-      printk(KERN_ALERT "[KERNEL] In dma interrupt handler Non Full drain\n");
+      printk(KERN_ALERT "[KERNEL] In dma interrupt handler drain\n");
       drainDMA(dma_buf[kyouko3.dma_drain].count);
   }
 
