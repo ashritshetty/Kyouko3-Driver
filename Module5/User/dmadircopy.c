@@ -104,10 +104,8 @@ int main(int argc, char *argv[])
   //ioctl(fd, FIFO_QUEUE, &entry);
   
   //Calling BIND_DMA
-  ret = ioctl(fd, BIND_DMA, &dma_addr);
-  printf("DMA_ADDR: %x \n", dma_addr);
-  
-  *temp_addr = (unsigned int*)dma_addr;
+  ret = ioctl(fd, BIND_DMA, &temp_addr);
+  printf("DMA_ADDR: %x \n", temp_addr);
   
   //Writing dma header
   *temp_addr = *(unsigned int*)&k_dma_header;
