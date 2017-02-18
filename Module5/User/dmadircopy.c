@@ -29,7 +29,7 @@
 #define GRAPHICS_ON 1
 #define GRAPHICS_OFF 0
 
-#define DMA_HEADER_SZ 0x0004
+#define DMA_HEADER_SZ 0x00000004
 
 struct fifo_entry{
     unsigned int cmd;
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
   int ret, i;
   unsigned int RAM_SIZE;
   struct fifo_entry entry;
-  unsigned int dma_addr = 0;
+  unsigned long dma_addr = 0;
   unsigned int* temp_addr;
   
   k_dma_header.address = 0x1045;
@@ -103,39 +103,44 @@ int main(int argc, char *argv[])
   //entry.value = 1;
   //ioctl(fd, FIFO_QUEUE, &entry);
   
+  printf("DMA_ADDR1: %x   %p \n", *temp_addr, temp_addr);
   //Calling BIND_DMA
-  ret = ioctl(fd, BIND_DMA, &temp_addr);
-  printf("DMA_ADDR: %x \n", temp_addr);
+  ret = ioctl(fd, BIND_DMA, &dma_addr);
+  temp_addr = (unsigned int*)dma_addr;
+  printf("DMA_ADDR2: %x   %p \n", *temp_addr, temp_addr);
   
   //Writing dma header
   *temp_addr = *(unsigned int*)&k_dma_header;
-  temp_addr += DMA_HEADER_SZ;
+  temp_addr++;         // = temp_addr + DMA_HEADER_SZ;
   
+  printf("DMA_ADDR3: %x  %p \n", *temp_addr, temp_addr);
+
   //Format is BGRXYZ  
   for(i = 0; i < 3; i++)
   {     
     //Writing blue color
     *temp_addr = *(unsigned int*)&b[i];
+    temp_addr++;
         
     //Writing green color
-    temp_addr += 0x0004;
     *temp_addr = *(unsigned int*)&g[i];
+    temp_addr++;
         
     //Writing red color
-    temp_addr += 0x0004;
     *temp_addr = *(unsigned int*)&r[i];
+    temp_addr++;
       
     //Writing X-coord
-    temp_addr += 0x0004;
     *temp_addr = *(unsigned int*)&x[i];
+    temp_addr++;
     
     //Writing Y-coord
-    temp_addr += 0x0004;
     *temp_addr = *(unsigned int*)&y[i];
+    temp_addr++;
     
     //Writing Z-coord
-    temp_addr += 0x0004;
     *temp_addr = *(unsigned int*)&z[i];
+    temp_addr++;
   }
 
   dma_addr = 76;
@@ -147,8 +152,8 @@ int main(int argc, char *argv[])
   ioctl(fd, FIFO_QUEUE, &entry);
   
   ioctl(fd, FIFO_FLUSH, 0);
-  
-  sleep(2);
+
+  sleep(10);
   
   if(ret == 0){
     ioctl(fd, UNBIND_DMA, &dma_addr);    
