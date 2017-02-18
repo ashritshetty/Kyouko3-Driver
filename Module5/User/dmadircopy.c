@@ -107,16 +107,17 @@ int main(int argc, char *argv[])
   ret = ioctl(fd, BIND_DMA, &dma_addr);
   printf("DMA_ADDR: %x \n", dma_addr);
   
-  temp_addr = (unsigned int*)dma_addr;
+  *temp_addr = (unsigned int*)dma_addr;
+  
   //Writing dma header
-  *temp_addr = *(unsigned int*)&k_dma_header
+  *temp_addr = *(unsigned int*)&k_dma_header;
   temp_addr += DMA_HEADER_SZ;
   
   //Format is BGRXYZ  
   for(i = 0; i < 3; i++)
   {     
     //Writing blue color
-    temp_addr = *(unsigned int*)&b[i];
+    *temp_addr = *(unsigned int*)&b[i];
         
     //Writing green color
     temp_addr += 0x0004;
