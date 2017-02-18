@@ -107,34 +107,34 @@ int main(int argc, char *argv[])
   printf("DMA_ADDR: %x \n", dma_addr);
   
   //Writing dma header
-  *dma_addr = *(unsigned int*)&k_dma_header
+  *(unsigned int*)dma_addr = *(unsigned int*)&k_dma_header
   dma_addr = dma_addr + DMA_HEADER_SZ;
   
   //Format is BGRXYZ  
   for(i = 0; i < 3; i++)
   {     
     //Writing blue color
-    *dma_addr = *(unsigned int*)&b[i];
+    *(unsigned int*)ma_addr = *(unsigned int*)&b[i];
         
     //Writing green color
     dma_addr = dma_addr+0x0004;
-    *dma_addr = *(unsigned int*)&g[i];
+    *(unsigned int*)dma_addr = *(unsigned int*)&g[i];
         
     //Writing red color
     dma_addr = dma_addr+0x0008;
-    *dma_addr = *(unsigned int*)&r[i];
+    *(unsigned int*)dma_addr = *(unsigned int*)&r[i];
       
     //Writing X-coord
     dma_addr = dma_addr+0x000c;
-    *dma_addr = *(unsigned int*)&x[i];
+    *(unsigned int*)dma_addr = *(unsigned int*)&x[i];
     
     //Writing Y-coord
     dma_addr = dma_addr+0x0010;
-    *dma_addr = *(unsigned int*)&y[i];
+    *(unsigned int*)dma_addr = *(unsigned int*)&y[i];
     
     //Writing Z-coord
     dma_addr = dma_addr+0x0014;
-    *dma_addr = *(unsigned int*)&z[i];
+    *(unsigned int*)dma_addr = *(unsigned int*)&z[i];
   }
 
   dma_addr = 76;
