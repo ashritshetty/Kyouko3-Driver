@@ -328,10 +328,10 @@ irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
   if((iflags & 0x02) == 0)
     return IRQ_NONE;
 
+  kyouko3.dma_drain = (kyouko3.dma_drain+1)%NUM_DMA_BUF;
   if(kyouko3.dma_fill == kyouko3.dma_drain && kyouko3.isQueueFull == 1 && kyouko3.suspend_phase == 0)
   {
       printk(KERN_ALERT "[KERNEL] In dma interrupt handler Full drain\n");
-      kyouko3.dma_drain = (kyouko3.dma_drain+1)%NUM_DMA_BUF;
       drainDMA(dma_buf[kyouko3.dma_drain].count);
       wake_up_interruptible(&dma_snooze);
       kyouko3.isQueueFull = 0;
@@ -339,7 +339,6 @@ irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
   else if(abs(kyouko3.dma_fill - kyouko3.dma_drain) > 1)
   {
       printk(KERN_ALERT "[KERNEL] In dma interrupt handler Non Full drain\n");
-      kyouko3.dma_drain = (kyouko3.dma_drain+1)%NUM_DMA_BUF;
       drainDMA(dma_buf[kyouko3.dma_drain].count);
   }
 

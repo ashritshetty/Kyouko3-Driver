@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
   
   ioctl(fd, FIFO_FLUSH, 0);
 
-  sleep(10);
+  sleep(3);
   
   if(ret == 0){
     ioctl(fd, UNBIND_DMA, &dma_addr);    
