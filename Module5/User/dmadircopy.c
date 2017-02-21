@@ -97,7 +97,7 @@ void fillTriangle(unsigned int* temp_addr, int factor)
     temp_addr++;
     
     //Writing Z-coord
-    z[i] *= factor;
+    //z[i] += factor;
     *temp_addr = *(unsigned int*)&z[i];
     temp_addr++;
   }    
@@ -111,6 +111,8 @@ int main(int argc, char *argv[])
   struct fifo_entry entry;
   unsigned long dma_addr = 0;
   unsigned int* temp_addr;
+
+  //int factor = -1.0;
   
   k_dma_header.address = 0x1045;
   k_dma_header.count = 0x0003;
@@ -133,13 +135,14 @@ int main(int argc, char *argv[])
   temp_addr = (unsigned int*)dma_addr;
   printf("DMA_ADDR2: %x   %p \n", temp_addr, temp_addr);
   
-  for(i = 0; i < 2; ++i)
+  for(i = 0; i < 1000; ++i)
   {
     //Writing dma header
     *temp_addr = *(unsigned int*)&k_dma_header;
     temp_addr++;  
     
-    fillTriangle(temp_addr, arr[i]);
+    fillTriangle(temp_addr, arr[i%2]);
+    //factor += 0.2;
     dma_addr = 76;
     ioctl(fd, START_DMA, &dma_addr);
     temp_addr = (unsigned int*)dma_addr;
@@ -152,6 +155,9 @@ int main(int argc, char *argv[])
     ioctl(fd, FIFO_QUEUE, &entry);
   }
   
+    //entry.cmd = FIFO_FLUSH_REG;
+    //entry.value = 0;
+    //ioctl(fd, FIFO_QUEUE, &entry);
   ioctl(fd, FIFO_FLUSH, 0);
 
   sleep(3);
