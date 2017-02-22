@@ -204,6 +204,33 @@ int main(int argc, char *argv[])
     }
     yscale = yscale + scale;
   }
+  yscale = 0.0;
+  float itriangle[6] = {-0.8, -0.8, -0.9, -1.0, -0.7, -1.0};
+  for(i = -1.0; i <= 1.0; i = i+scale)
+  {
+    //itriangle[6] = {-0.9, -1.0, -1.0, -0.8, -0.8, -0.8};
+    xscale = 0.0;
+    for(j = -1.0; j <= 1.0; j = j+scale)
+    {
+      translate(itriangle, xscale, yscale, rtriangle);
+      //rotate(rtriangle, j, rtriangle);
+      check(rtriangle, rtriangle);
+
+      *temp_addr = *(unsigned int*)&k_dma_header;
+      temp_addr++;
+
+      draw(temp_addr, rtriangle);
+      dma_addr = 76;
+      ioctl(fd, START_DMA, &dma_addr);
+      temp_addr = (unsigned int*)dma_addr;
+
+      entry.cmd = FIFO_FLUSH_REG;
+      entry.value = 0;
+      ioctl(fd, FIFO_QUEUE, &entry);
+      xscale = xscale + scale;
+    }
+    yscale = yscale + scale;
+  }
 
   ioctl(fd, FIFO_FLUSH, 0);
 
