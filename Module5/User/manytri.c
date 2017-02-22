@@ -58,9 +58,8 @@ void U_WRITE_FB(unsigned int reg, unsigned int value)
   *(kyouko3.u_frame_buffer+(reg)) = value;
 }
 
-float translate(float triangle[6], float xscale, float yscale)
+void translate(float triangle[], float xscale, float yscale, float* rtriangle)
 {
-  float rtriangle[6];
   rtriangle[0] = triangle[0] + xscale;
   rtriangle[1] = triangle[1] + yscale;
   rtriangle[2] = triangle[2] + xscale;
@@ -68,13 +67,13 @@ float translate(float triangle[6], float xscale, float yscale)
   rtriangle[4] = triangle[4] + xscale;
   rtriangle[5] = triangle[5] + yscale;
 
-  return rtriangle;
+ // return rtriangle;
 }
 
-float rotate(float triangle[6], float sino)
+void rotate(float triangle[], float sino, float* rtriangle)
 {
   float coso = sqrt(1-(sino*sino));
-  float rtriangle[6];
+//  float rtriangle[6];
   rtriangle[0] = triangle[0]*coso - triangle[1]*sino;
   rtriangle[1] = triangle[0]*sino + triangle[1]*coso;
   rtriangle[2] = triangle[2]*coso - triangle[3]*sino;
@@ -82,13 +81,13 @@ float rotate(float triangle[6], float sino)
   rtriangle[4] = triangle[4]*coso - triangle[5]*sino;
   rtriangle[5] = triangle[4]*sino + triangle[5]*coso;
 
-  return rtriangle;
+//  return rtriangle;
 }
 
-float check(float triangle[6])
+void check(float triangle[], float* rtriangle)
 {
   int i;
-  float rtriangle[6];
+//  float rtriangle[6];
   for(i = 0; i < 6; i++)
   {
     if(triangle[i] < -1.0)
@@ -99,10 +98,10 @@ float check(float triangle[6])
       rtriangle[i] = triangle[i];
   }
 
-  return rtriangle;
+//  return rtriangle;
 }
 
-void draw(unsigned int* temp_addr, float triangle[6])
+void draw(unsigned int* temp_addr, float triangle[])
 {
   float x[3] = {triangle[0], triangle[2], triangle[4]};
   float y[3] = {triangle[1], triangle[3], triangle[5]};
@@ -131,17 +130,14 @@ void draw(unsigned int* temp_addr, float triangle[6])
     temp_addr++;
 
     //Writing X-coord
-    x[i] *= factor;
     *temp_addr = *(unsigned int*)&x[i];
     temp_addr++;
 
     //Writing Y-coord
-    y[i] *= factor;
     *temp_addr = *(unsigned int*)&y[i];
     temp_addr++;
 
     //Writing Z-coord
-    z[i] *= factor;
     *temp_addr = *(unsigned int*)&z[i];
     temp_addr++;
   }
@@ -150,7 +146,7 @@ void draw(unsigned int* temp_addr, float triangle[6])
 int main(int argc, char *argv[])
 {
   int fd;
-  int ret, i;
+  int ret;
   unsigned int RAM_SIZE;
   struct fifo_entry entry;
   unsigned long dma_addr = 0;
@@ -178,19 +174,25 @@ int main(int argc, char *argv[])
   printf("DMA_ADDR2: %x   %p \n", temp_addr, temp_addr);
 
   float i, j;
-  float dtriangle[] = {x1, y1, x2, y2, x3, y3};
-  for(i = -1.0, i < 1.0, i = i+scale)
+  float xscale = 0.0;
+  float yscale = 0.0;
+  float scale = 0.2; 
+  float dtriangle[6] = {-0.9, -1.0, -1.0, -0.8, -0.8, -0.8};
+  float rtriangle[6];
+  for(i = -1.0; i <= 1.0; i = i+scale)
   {
-    for(j = -1.0, j < 1.0, j = j+scale)
+    //dtriangle[6] = {-0.9, -1.0, -1.0, -0.8, -0.8, -0.8};
+    xscale = 0.0;
+    for(j = -1.0; j <= 1.0; j = j+scale)
     {
-      dtriangle = translate(dtriangle, xscale, yscale);
-      dtriangle = rotate(dtriangle, j);
-      dtriangle = check(dtriangle);
+      translate(dtriangle, xscale, yscale, rtriangle);
+      //rotate(rtriangle, j, rtriangle);
+      check(rtriangle, rtriangle);
 
       *temp_addr = *(unsigned int*)&k_dma_header;
       temp_addr++;
 
-      draw(temp_addr, dtriangle);
+      draw(temp_addr, rtriangle);
       dma_addr = 76;
       ioctl(fd, START_DMA, &dma_addr);
       temp_addr = (unsigned int*)dma_addr;
