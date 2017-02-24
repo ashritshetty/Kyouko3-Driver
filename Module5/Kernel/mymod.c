@@ -493,6 +493,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
           spin_lock_irqsave(&mLock, flags);
           
           count = getBufCnt();
+          printk(KERN_ALERT "In unbind DMA count %d \n", count);
           if(count > 0){
               kyouko3.suspend_phase = 2;
           }
@@ -501,6 +502,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
           if(kyouko3.suspend_phase == 2){
               printk(KERN_ALERT "Kernel thread unbind dma going to sleep %d %d %d\n", kyouko3.dma_fill, kyouko3.dma_drain, kyouko3.isQueueFull);
               wait_event_interruptible(cleanup_snooze, (kyouko3.dma_fill == kyouko3.dma_drain && kyouko3.isQueueFull == 0));
+              printk(KERN_ALERT "Kernel thread unbind dma had a nice sleep\n");
               spin_lock_irqsave(&mLock, flags);
               kyouko3.suspend_phase = 0;
               spin_unlock_irqrestore(&mLock, flags);
@@ -514,6 +516,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
           K_WRITE_REG(INTR_SET, 0x0);
           free_irq(kyouko3.kyouko3_pci_dev->irq, &kyouko3);
           pci_disable_msi(kyouko3.kyouko3_pci_dev);
+          printk(KERN_ALERT "In end unbind DMA \n");
           break;
       }
       case START_DMA:
