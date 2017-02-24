@@ -317,7 +317,59 @@ void printDMABuf(int i){
   printk(KERN_ALERT "[KERNEL] dma_buf -> u_base addr: %lx \n", dma_buf[i].u_base);
 }
 
+unsigned int getBufCnt(void){
+    unsigned int bufCnt = (kyouko3.dma_fill >= kyouko3.dma_drain) ?
+                           (kyouko3.dma_fill - kyouko3.dma_drain) :
+                           (NUM_DMA_BUF - kyouko3.dma_drain + kyouko3.dma_fill);
+
+    if(bufCnt == 0 && kyouko3.isQueueFull == 1)
+    {
+      bufCnt = NUM_DMA_BUF;
+    }                         
+                           
+    return bufCnt;
+}
+
 irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
+{
+  unsigned int iflags;
+  DEFINE_SPINLOCK(mLock);
+  unsigned long flags;
+  
+  iflags = K_READ_REG(INTR_STATUS);
+  K_WRITE_REG(INTR_STATUS, (iflags & 0xf));
+  
+  printk(KERN_ALERT "[KERNEL] In dma interrupt handler \n");
+  
+  if((iflags & 0x02) == 0)
+    return IRQ_NONE;
+
+  kyouko3.dma_drain = (kyouko3.dma_drain+1)%NUM_DMA_BUF;
+  
+  //TODO: Add sleep
+  while(getBufCnt() == 1 && suspend_phase == 1);
+  
+  spin_lock_irqsave(&mLock, flags);
+  if(kyouko3.isQueueFull == 1 && kyouko3.suspend_phase == 0)  //
+  {
+      printk(KERN_ALERT "[KERNEL] In dma interrupt handler drain\n");
+      wake_up_interruptible(&dma_snooze);
+      kyouko3.isQueueFull = 0;
+  }
+  spin_unlock_irqrestore(&mLock, flags);
+  
+  //TODO: CHECK IF HAVE TO ADD COUNT
+  if(kyouko3.dma_fill != kyouko3.dma_drain)
+  {
+      printk(KERN_ALERT "[KERNEL] In dma interrupt handler drain\n");
+      drainDMA(dma_buf[kyouko3.dma_drain].count);
+  }
+
+  printk(KERN_ALERT "[KERNEL] In End dma interrupt handler\n");
+  return IRQ_HANDLED;
+}
+
+irqreturn_t dma_intr_old(int irq, void *dev_id, struct pt_regs *regs)
 {
   unsigned int iflags;
   DEFINE_SPINLOCK(mLock);
