@@ -325,7 +325,8 @@ unsigned int getBufCnt(void){
     if(bufCnt == 0 && kyouko3.isQueueFull == 1)
     {
       bufCnt = NUM_DMA_BUF;
-    }                         
+    }
+    printk(KERN_ALERT "Buf Count %d \n", bufCnt);
                            
     return bufCnt;
 }
@@ -347,7 +348,9 @@ irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
   kyouko3.dma_drain = (kyouko3.dma_drain+1)%NUM_DMA_BUF;
   
   //TODO: Add sleep
-  while(getBufCnt() == 1 && kyouko3.suspend_phase == 1);
+  while(getBufCnt() <= 1 && kyouko3.suspend_phase == 1){
+    printk(KERN_ALERT "Int_Handler is sleeping \n");
+  }
   
   spin_lock_irqsave(&mLock, flags);
   if(kyouko3.isQueueFull == 1 && kyouko3.suspend_phase == 0)  //
@@ -385,7 +388,9 @@ irqreturn_t dma_intr_old(int irq, void *dev_id, struct pt_regs *regs)
 
   kyouko3.dma_drain = (kyouko3.dma_drain+1)%NUM_DMA_BUF;
   
-  while(kyouko3.suspend_phase == 1);
+  while(kyouko3.suspend_phase == 1){
+      printk(KERN_ALERT "Int_Handler is sleeping \n");
+  }
   
   spin_lock_irqsave(&mLock, flags);
   if(kyouko3.isQueueFull == 1)  //kyouko3.suspend_phase == 0
@@ -532,6 +537,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
            if(kyouko3.suspend_phase == 1)
            {
                kyouko3.suspend_phase = 0;
+               printf(KERN_ALERT "Kernel thread going to sleep %d %d\n", kyouko3.dma_fill, kyouko3.dma_drain);
                wait_event_interruptible(dma_snooze, kyouko3.dma_fill != kyouko3.dma_drain);
            }
            
