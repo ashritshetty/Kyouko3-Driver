@@ -353,6 +353,7 @@ irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
   //TODO: Add sleep
   while(getBufCnt() <= 1 && kyouko3.suspend_phase == 1){
     printk(KERN_ALERT "Int_Handler is sleeping \n");
+    msleep(10);
   }
   
   spin_lock_irqsave(&mLock, flags);
@@ -372,6 +373,7 @@ irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
   }
   else if(kyouko3.suspend_phase == 2){
       wake_up_interruptible(&cleanup_snooze);
+      wake_up_interruptible(&dma_snooze);
   }
 
   printk(KERN_ALERT "[KERNEL] In End dma interrupt handler\n");
