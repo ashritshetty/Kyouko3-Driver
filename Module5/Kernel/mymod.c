@@ -347,7 +347,7 @@ irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
   kyouko3.dma_drain = (kyouko3.dma_drain+1)%NUM_DMA_BUF;
   
   //TODO: Add sleep
-  while(getBufCnt() == 1 && suspend_phase == 1);
+  while(getBufCnt() == 1 && kyouko3.suspend_phase == 1);
   
   spin_lock_irqsave(&mLock, flags);
   if(kyouko3.isQueueFull == 1 && kyouko3.suspend_phase == 0)  //
