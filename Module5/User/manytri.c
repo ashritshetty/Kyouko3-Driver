@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <math.h>
@@ -60,6 +61,7 @@ void intHandler(int signum)
   ioctl(fd, VMODE, GRAPHICS_OFF);
   printf("[USER] Closing device : %s\n", DEVICE_FILE_NAME);
   close(fd);
+  exit(0);
 }
 
 unsigned int U_READ_REG(unsigned int reg)
