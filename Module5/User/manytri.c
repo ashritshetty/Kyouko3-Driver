@@ -54,6 +54,7 @@ struct kyouko3_dma_header{
 void intHandler(int signum)
 {
   printf("[USER] Clearing DMA Buffer\n");
+  ioctl(fd, FIFO_FLUSH, 0);
   ioctl(fd, UNBIND_DMA, 0);    
   printf("[USER] Turning off graphics mode\n");
   ioctl(fd, VMODE, GRAPHICS_OFF);
