@@ -101,16 +101,16 @@ void check(float triangle[], float* rtriangle)
 //  return rtriangle;
 }
 
-void draw(unsigned int* temp_addr, float triangle[])
+void draw(unsigned int* temp_addr, float triangle[], float color[])
 {
   float x[3] = {triangle[0], triangle[2], triangle[4]};
   float y[3] = {triangle[1], triangle[3], triangle[5]};
   float z[3] = {0.0, 0.0, 0.0};
   float w[3] = {1.0, 1.0, 1.0};
 
-  float r[3] = {1.0, 0.0, 0.0};
-  float b[3] = {0.0, 1.0, 0.0};
-  float g[3] = {0.0, 0.0, 1.0};
+  float r[3] = {color[0], color[0], color[0]};
+  float g[3] = {color[1], color[1], color[1]};
+  float b[3] = {color[2], color[2], color[2]};
   float a[3] = {0.0, 0.0, 0.0};
 
   int i;
@@ -178,6 +178,7 @@ int main(int argc, char *argv[])
   float yscale = 0.0;
   float scale = 0.2; 
   float dtriangle[6] = {-0.9, -1.0, -1.0, -0.8, -0.8, -0.8};
+  float color1[3] = {0.98, 0.698, 0.122};
   float rtriangle[6];
   for(i = -1.0; i <= 1.0; i = i+scale)
   {
@@ -192,7 +193,7 @@ int main(int argc, char *argv[])
       *temp_addr = *(unsigned int*)&k_dma_header;
       temp_addr++;
 
-      draw(temp_addr, rtriangle);
+      draw(temp_addr, rtriangle, color1);
       dma_addr = 76;
       ioctl(fd, START_DMA, &dma_addr);
       temp_addr = (unsigned int*)dma_addr;
@@ -206,6 +207,7 @@ int main(int argc, char *argv[])
   }
   yscale = 0.0;
   float itriangle[6] = {-0.8, -0.8, -0.9, -1.0, -0.7, -1.0};
+  float color2[3] = {0.988, 0.573, 0};
   for(i = -1.0; i <= 1.0; i = i+scale)
   {
     //itriangle[6] = {-0.9, -1.0, -1.0, -0.8, -0.8, -0.8};
@@ -219,7 +221,7 @@ int main(int argc, char *argv[])
       *temp_addr = *(unsigned int*)&k_dma_header;
       temp_addr++;
 
-      draw(temp_addr, rtriangle);
+      draw(temp_addr, rtriangle, color2);
       dma_addr = 76;
       ioctl(fd, START_DMA, &dma_addr);
       temp_addr = (unsigned int*)dma_addr;
@@ -237,6 +239,7 @@ int main(int argc, char *argv[])
   sleep(3);
   
   if(ret == 0){
+    printf("[USER] Unbinding DMA buffers :\n");
     ioctl(fd, UNBIND_DMA, &dma_addr);    
   }
   ioctl(fd, VMODE, GRAPHICS_OFF);
