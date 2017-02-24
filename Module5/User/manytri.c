@@ -4,6 +4,7 @@
 #include <math.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
+#include <signal.h>
 
 #define DEVICE_FILE_NAME "/dev/kyouko3"
 
@@ -31,6 +32,8 @@
 
 #define DMA_HEADER_SZ 0x00000004
 
+static int fd;
+
 struct fifo_entry{
     unsigned int cmd;
     unsigned int value;
@@ -47,6 +50,16 @@ struct kyouko3_dma_header{
     unsigned int count : 10;
     unsigned int opCode : 8;
 }k_dma_header;
+
+void intHandler(int signum)
+{
+  printf("[USER] Clearing DMA Buffer\n");
+  ioctl(fd, UNBIND_DMA, 0);    
+  printf("[USER] Turning off graphics mode\n");
+  ioctl(fd, VMODE, GRAPHICS_OFF);
+  printf("[USER] Closing device : %s\n", DEVICE_FILE_NAME);
+  close(fd);
+}
 
 unsigned int U_READ_REG(unsigned int reg)
 {
@@ -143,9 +156,18 @@ void draw(unsigned int* temp_addr, float triangle[], float color[])
   }
 }
 
+void set_intHandler()
+{
+  signal(SIGINT, intHandler);
+  signal(SIGTERM, intHandler);
+  signal(SIGQUIT, intHandler);
+  signal(SIGHUP, intHandler);
+}
+
 int main(int argc, char *argv[])
 {
-  int fd;
+  set_intHandler();
+
   int ret;
   unsigned int RAM_SIZE;
   struct fifo_entry entry;
