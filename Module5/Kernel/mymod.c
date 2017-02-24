@@ -45,6 +45,7 @@ MODULE_AUTHOR("Clemson Tigers");
 #define DMA_BUF_SIZE 126976u //1024*124 = (124K)
 
 DECLARE_WAIT_QUEUE_HEAD(dma_snooze);
+DECLARE_WAIT_QUEUE_HEAD(cleanup_snooze);
 
 struct kyouko3_frame{
   unsigned int cols;
@@ -367,6 +368,9 @@ irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
       printk(KERN_ALERT "[KERNEL] In dma interrupt handler drain\n");
       drainDMA(dma_buf[kyouko3.dma_drain].count);
   }
+  else if(kyouko3.suspend_phase == 2){
+      wake_up_interruptible(&cleanup_snooze);
+  }
 
   printk(KERN_ALERT "[KERNEL] In End dma interrupt handler\n");
   return IRQ_HANDLED;
@@ -480,6 +484,25 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
           break;
 
       case UNBIND_DMA:
+      {
+          DEFINE_SPINLOCK(mLock);
+          unsigned long flags;
+          spin_lock_irqsave(&mLock, flags);
+          
+          unsigned int count = getBufCnt();
+          if(count > 0){
+              kyouko3.suspend_phase = 2;
+          }
+          spin_unlock_irqrestore(&mLock, flags);
+          
+          if(kyouko3.suspend_phase == 2){
+              printk(KERN_ALERT "Kernel thread unbind dma going to sleep %d %d %d\n", kyouko3.dma_fill, kyouko3.dma_drain, kyouko3.isQueueFull);
+              wait_event_interruptible(cleanup_snooze, (kyouko3.dma_fill == kyouko3.dma_drain && kyouko3.isQueueFull == 0));
+              spin_lock_irqsave(&mLock, flags);
+              kyouko3.suspend_phase = 0;
+              spin_unlock_irqrestore(&mLock, flags);
+          }
+          
           for(i = 0; i < NUM_DMA_BUF; ++i)
           {
             vm_munmap(dma_buf[i].u_base, DMA_BUF_SIZE);
@@ -489,7 +512,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
           free_irq(kyouko3.kyouko3_pci_dev->irq, &kyouko3);
           pci_disable_msi(kyouko3.kyouko3_pci_dev);
           break;
-
+      }
       case START_DMA:
       {
            unsigned long count = 0;
