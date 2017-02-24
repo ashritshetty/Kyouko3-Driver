@@ -489,9 +489,10 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
       {
           DEFINE_SPINLOCK(mLock);
           unsigned long flags;
+          unsigned int count;
           spin_lock_irqsave(&mLock, flags);
           
-          unsigned int count = getBufCnt();
+          count = getBufCnt();
           if(count > 0){
               kyouko3.suspend_phase = 2;
           }
