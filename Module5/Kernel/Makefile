@@ -1,4 +1,4 @@
-obj-m += mymod2.o
+obj-m += mymod.o
 
 default:
 	$(MAKE) -C /usr/src/linux M=$(PWD) modules
