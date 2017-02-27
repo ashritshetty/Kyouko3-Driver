@@ -45,7 +45,6 @@ MODULE_AUTHOR("Clemson Tigers");
 #define DMA_BUF_SIZE 126976u //1024*124 = (124K)
 
 DECLARE_WAIT_QUEUE_HEAD(dma_snooze);
-//DECLARE_WAIT_QUEUE_HEAD(cleanup_snooze);
 
 struct kyouko3_frame{
   unsigned int cols;
@@ -113,9 +112,19 @@ struct kyouko3 {
 
   //This give the current mmap dma index value
   unsigned int curr_dma_mmap_index;
+  
+  //The index position to know current fill and drain
   unsigned int dma_fill;
   unsigned int dma_drain;
-  unsigned int suspend_phase;
+  
+  //Suspend_state - This defines state of this the suspension
+  //0 - Not suspended
+  //1 - Being suspended but not yet suspended
+  //2 - Suspended in START_DMA
+  //3 - Suspended in UNBIND_DMA
+  unsigned int suspend_state;
+  
+  //Defines if the DMA Queue is full or not
   unsigned int isQueueFull;
   
 }kyouko3;
@@ -180,7 +189,7 @@ int kyouko3_open(struct inode *inode, struct file *fp)
   kyouko3.dma_fill = 0;
   kyouko3.dma_drain = 0;
   
-  kyouko3.suspend_phase = 0;
+  kyouko3.suspend_state = 0;
   kyouko3.isQueueFull = 0;
 
   printk(KERN_ALERT "[KERNEL] Successfully opened device\n");
@@ -350,71 +359,24 @@ irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
 
   kyouko3.dma_drain = (kyouko3.dma_drain+1)%NUM_DMA_BUF;
   
-  //TODO: Add sleep
-  /*while(getBufCnt() <= 1 && kyouko3.suspend_phase == 1){
-    printk(KERN_ALERT "Int_Handler is sleeping \n");
-    msleep(10);
-  }*/
-  
   spin_lock_irqsave(&mLock, flags);
   if(kyouko3.isQueueFull == 1)  //
   {
       printk(KERN_ALERT "[KERNEL] In dma interrupt handler drain\n");
       kyouko3.isQueueFull = 0;
-      if(kyouko3.suspend_phase == 0){
+      if(kyouko3.suspend_state == 2){
         wake_up_interruptible(&dma_snooze);
       }
   }
   spin_unlock_irqrestore(&mLock, flags);
   
-  //TODO: CHECK IF HAVE TO ADD COUNT
   if(kyouko3.dma_fill != kyouko3.dma_drain)
   {
       printk(KERN_ALERT "[KERNEL] In dma interrupt handler drain\n");
       drainDMA(dma_buf[kyouko3.dma_drain].count);
   }
-  else if(kyouko3.suspend_phase == 2){
+  else if(kyouko3.suspend_state == 3){
       wake_up_interruptible(&dma_snooze);
-  }
-
-  printk(KERN_ALERT "[KERNEL] In End dma interrupt handler\n");
-  return IRQ_HANDLED;
-}
-
-irqreturn_t dma_intr_old(int irq, void *dev_id, struct pt_regs *regs)
-{
-  unsigned int iflags;
-  DEFINE_SPINLOCK(mLock);
-  unsigned long flags;
-  
-  iflags = K_READ_REG(INTR_STATUS);
-  K_WRITE_REG(INTR_STATUS, (iflags & 0xf));
-  
-  printk(KERN_ALERT "[KERNEL] In dma interrupt handler \n");
-  
-  if((iflags & 0x02) == 0)
-    return IRQ_NONE;
-
-  kyouko3.dma_drain = (kyouko3.dma_drain+1)%NUM_DMA_BUF;
-  
-  while(kyouko3.suspend_phase == 1){
-      printk(KERN_ALERT "Int_Handler is sleeping \n");
-  }
-  
-  spin_lock_irqsave(&mLock, flags);
-  if(kyouko3.isQueueFull == 1)  //kyouko3.suspend_phase == 0
-  {
-      printk(KERN_ALERT "[KERNEL] In dma interrupt handler drain\n");
-      wake_up_interruptible(&dma_snooze);
-      kyouko3.isQueueFull = 0;
-  }
-  spin_unlock_irqrestore(&mLock, flags);
-  
-  //TODO: CHECK IF HAVE TO ADD COUNT
-  if(kyouko3.dma_fill != kyouko3.dma_drain)
-  {
-      printk(KERN_ALERT "[KERNEL] In dma interrupt handler drain\n");
-      drainDMA(dma_buf[kyouko3.dma_drain].count);
   }
 
   printk(KERN_ALERT "[KERNEL] In End dma interrupt handler\n");
@@ -428,7 +390,6 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
   switch(cmd){
       case FIFO_QUEUE:
         ret = copy_from_user(&entry, (struct fifo_entry*)arg, sizeof(struct fifo_entry));
-        //printk(KERN_ALERT "[KERNEL] In ioctl - FIFO_QUEUE entry.cmd %x entry.val %x \n", entry.cmd, entry.value);
         FIFO_WRITE(entry.cmd, entry.value);
         break;
 
@@ -438,6 +399,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 
       case VMODE:
       {
+        //TODO: copy from user
         //unsigned int vmArg = 0;
         //ret = copy_from_user(&vmArg, (unsigned int*)arg, sizeof(unsigned int));
         if((int)arg == GRAPHICS_ON)
@@ -497,17 +459,17 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
           
           count = getBufCnt();
           printk(KERN_ALERT "In unbind DMA count %d \n", count);
-          if(count > 0){
-              kyouko3.suspend_phase = 2;
+          if(count != 0){
+              kyouko3.suspend_state = 3;
           }
           spin_unlock_irqrestore(&mLock, flags);
           
-          if(kyouko3.suspend_phase == 2){
+          if(kyouko3.suspend_state == 3){
               printk(KERN_ALERT "Kernel thread unbind dma going to sleep %d %d %d\n", kyouko3.dma_fill, kyouko3.dma_drain, kyouko3.isQueueFull);
               wait_event_interruptible(dma_snooze, (kyouko3.dma_fill == kyouko3.dma_drain && kyouko3.isQueueFull == 0));
               printk(KERN_ALERT "Kernel thread unbind dma had a nice sleep\n");
               spin_lock_irqsave(&mLock, flags);
-              kyouko3.suspend_phase = 0;
+              kyouko3.suspend_state = 0;
               spin_unlock_irqrestore(&mLock, flags);
           }
           
@@ -529,18 +491,15 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
            unsigned long flags;
            
            ret = copy_from_user(&count, (unsigned long*)arg, sizeof(unsigned long));
-           //count = *(unsigned long*)arg;
            printk(KERN_ALERT "[KERNEL] In icotl - START_DMA count is %lu \n", count);
            
            if(count == 0)
                return 0;
 
-           //local_irq_save(flags);
            spin_lock_irqsave(&mLock, flags);
            if(kyouko3.dma_fill == kyouko3.dma_drain)
            {
-               //Queue is empty at this point
-               //local_irq_restore(flags);
+               //Queue was empty at this point
                spin_unlock_irqrestore(&mLock, flags);
                
                printk(KERN_ALERT "[KERNEL] In icotl - START_DMA FILL == DRAIN \n");
@@ -550,7 +509,6 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
                kyouko3.isQueueFull = 0;
                
                printDMABuf(kyouko3.dma_fill);
-               //TODO: Copy to user
                ret = copy_to_user((void __user*)arg, &(dma_buf[kyouko3.dma_fill].u_base), sizeof(unsigned long));
                return 0;
            }
@@ -561,23 +519,22 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 
            if(kyouko3.dma_fill == kyouko3.dma_drain)
            {
-               kyouko3.suspend_phase = 1;
+               kyouko3.suspend_state = 1;
                kyouko3.isQueueFull = 1;
            }
            spin_unlock_irqrestore(&mLock, flags);
            
-           if(kyouko3.suspend_phase == 1)
+           if(kyouko3.suspend_state == 1)
            {
-               kyouko3.suspend_phase = 0;
+               kyouko3.suspend_state = 2;
                printk(KERN_ALERT "Kernel thread going to sleep %d %d %d\n", kyouko3.dma_fill, kyouko3.dma_drain, kyouko3.isQueueFull);
                wait_event_interruptible(dma_snooze, ((kyouko3.dma_fill != kyouko3.dma_drain) || 
                                                      ((kyouko3.dma_fill == kyouko3.dma_drain) && kyouko3.isQueueFull == 0)));
+               kyouko3.suspend_state = 0;
            }
            
            printDMABuf(kyouko3.dma_fill);
-           //TODO: Copy to user
            ret = copy_to_user((void __user*)arg, &(dma_buf[kyouko3.dma_fill].u_base), sizeof(unsigned long));
-           //*(unsigned long*)arg = dma_buf[kyouko3.dma_fill].u_base;
            break;
       }
   }
