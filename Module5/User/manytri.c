@@ -38,7 +38,7 @@ static int fd;
 struct fifo_entry{
     unsigned int cmd;
     unsigned int value;
-}fifo_entry;
+};
 
 struct u_kyouko_device{
   unsigned int *u_control_base;
@@ -153,6 +153,7 @@ int main(int argc, char *argv[])
   unsigned int RAM_SIZE;
   unsigned int* temp_addr;
   unsigned long dma_addr = 0;
+  struct fifo_entry entry;
  
   float color[3];
   float triangle[6];
