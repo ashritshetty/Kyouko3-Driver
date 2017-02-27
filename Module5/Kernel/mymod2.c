@@ -52,7 +52,7 @@ struct kyouko3_frame{
   unsigned int rowPitch;
   unsigned int pixFormat;
   unsigned int startAddr;
-}kyouko3_frame;
+};
 
 struct kyouko3_frame frame = {
   .cols = 1024,
@@ -68,7 +68,7 @@ struct kyouko3_encoder{
     unsigned int offsetX;
     unsigned int offsetY;
     unsigned int frame;
-}kyouko3_encoder;
+};
 
 struct kyouko3_encoder encoder = {
     .width = 1024,
@@ -81,21 +81,21 @@ struct kyouko3_encoder encoder = {
 struct fifo_entry{
     unsigned int cmd;
     unsigned int value;
-}fifo_entry;
+};
 
 struct fifo{
     dma_addr_t p_base;
     struct fifo_entry *k_base;
     unsigned int head;
     unsigned int tail_cache;
-}fifo;
+};
 
 struct dma_addr{
     dma_addr_t p_base;
     unsigned long* k_base;
     unsigned long u_base;
     unsigned int count;
-}dma_addr;
+};
 
 struct kyouko3 {
   unsigned long p_control_base;
