@@ -14,6 +14,7 @@
 #include <asm/current.h>
 #include <linux/interrupt.h>
 #include <linux/spinlock.h>
+#include <asm/current.h>
 #include <linux/spinlock_types.h>
 #include "kyouko3def.h"
 
@@ -211,8 +212,8 @@ int kyouko3_mmap(struct file *fp, struct vm_area_struct *vma)
 {
   int ret = -1;
   //TODO: INCLUDE PROPER HEADER
-  //unsigned int uid = current->fsuid;
-  unsigned int uid = 0;	
+  unsigned int uid = current->cred->fsuid.val;
+  //unsigned int uid = 0;	
   unsigned int offset;
   if (uid != 0){
       return ret;
