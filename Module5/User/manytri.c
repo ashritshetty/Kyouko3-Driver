@@ -40,8 +40,7 @@ struct fifo_entry{
     unsigned int value;
 }fifo_entry;
 
-struct u_kyouko_device
-{
+struct u_kyouko_device{
   unsigned int *u_control_base;
   unsigned int *u_frame_buffer;
 }kyouko3;
@@ -81,9 +80,9 @@ void check(float triangle[], float* rtriangle)
   for(i = 0; i < 6; i++)
   {
     if(triangle[i] < -1.0)
-      rtriangle[i] = -1.0;
+      rtriangle[i] = -0.9;
     else if(triangle[i] > 1.0)
-      rtriangle[i] = 1.0;
+      rtriangle[i] = 0.9;
     else
       rtriangle[i] = triangle[i];
   }
@@ -143,12 +142,23 @@ void set_intHandler()
 int main(int argc, char *argv[])
 {
   set_intHandler();
+ 
+  if(argc != 2)
+  {
+    printf("[USER] Usage : ./mycode <number of triangles> \n");
+    return 0;
+  }
 
-  int ret;
+  int ret, i, n;
   unsigned int RAM_SIZE;
-  struct fifo_entry entry;
-  unsigned long dma_addr = 0;
   unsigned int* temp_addr;
+  unsigned long dma_addr = 0;
+ 
+  float color[3];
+  float triangle[6];
+  float rtriangle[6];
+
+  n = atoi(argv[1]);
   
   k_dma_header.address = 0x1045;
   k_dma_header.count = 0x0003;
@@ -164,20 +174,13 @@ int main(int argc, char *argv[])
   
   ret = ioctl(fd, BIND_DMA, &dma_addr);
   temp_addr = (unsigned int*)dma_addr;
-  printf("DMA_ADDR2: %x   %p \n", temp_addr, temp_addr);
+  printf("[USER] DMA_ADDR2: %x   %p \n", temp_addr, temp_addr);
 
   ioctl(fd, VMODE, GRAPHICS_ON);
 
-  int i;
-  float color[3];
-  float triangle[6];
-  float rtriangle[6];
-
-  int n = atoi(argv[1]);
-
   srand(time(NULL));
 
-  for(i = 0; i < n; i = i++)
+  for(i = 0; i < n; i; i++)
   {
     float x1rand = (float)rand() / (float)RAND_MAX;
     float y1rand = (float)rand() / (float)RAND_MAX;
@@ -218,7 +221,7 @@ int main(int argc, char *argv[])
   
   if(ret == 0)
   {
-    printf("[USER] Unbinding DMA buffers :\n");
+    printf("[USER] Unbinding DMA buffers \n");
     ioctl(fd, UNBIND_DMA, &dma_addr);    
   }
  
