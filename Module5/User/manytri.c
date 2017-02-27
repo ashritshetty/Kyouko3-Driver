@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
 
   srand(time(NULL));
 
-  for(i = 0; i < n; i = i++)
+  for(i = 0; i < n; i++)
   {
     float x1rand = (float)rand() / (float)RAND_MAX;
     float y1rand = (float)rand() / (float)RAND_MAX;
