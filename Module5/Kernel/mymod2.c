@@ -571,7 +571,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
                kyouko3.suspend_phase = 0;
                printk(KERN_ALERT "Kernel thread going to sleep %d %d %d\n", kyouko3.dma_fill, kyouko3.dma_drain, kyouko3.isQueueFull);
                wait_event_interruptible(dma_snooze, ((kyouko3.dma_fill != kyouko3.dma_drain) || 
-                                                     ((kyouko3.dma_fill == kyouko3.dma_drain) && kyouko3.isQueueFull == 0));
+                                                     ((kyouko3.dma_fill == kyouko3.dma_drain) && kyouko3.isQueueFull == 0)));
            }
            
            printDMABuf(kyouko3.dma_fill);

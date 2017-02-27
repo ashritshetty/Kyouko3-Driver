@@ -88,13 +88,14 @@ int main(int argc, char *argv[])
     return 0;
   }
   
-  ioctl(fd, VMODE, GRAPHICS_ON);
-  
+//  ioctl(fd, VMODE, GRAPHICS_ON);
+
   //Calling BIND_DMA
   ioctl(fd, BIND_DMA, &dma_addr);
   printf("DMA_ADDR: %lx \n", dma_addr);
   
-/*  //Writing dma header
+  ioctl(fd, VMODE, GRAPHICS_ON);
+  //Writing dma header
   entry.cmd = dma_addr;
   entry.value = *(unsigned int*)&k_dma_header;
   ioctl(fd, FIFO_QUEUE, &entry); 
@@ -137,7 +138,7 @@ int main(int argc, char *argv[])
 
   dma_addr = 72;
   ioctl(fd, START_DMA, &dma_addr);
-*/  
+  
   //Write 0 to flush register
   entry.cmd = FIFO_FLUSH_REG;
   entry.value = 0;
@@ -145,7 +146,7 @@ int main(int argc, char *argv[])
   
   ioctl(fd, FIFO_FLUSH, 0);
  
-  sleep(5);
+  sleep(2);
   
   ioctl(fd, UNBIND_DMA, &dma_addr);
   ioctl(fd, VMODE, GRAPHICS_OFF);

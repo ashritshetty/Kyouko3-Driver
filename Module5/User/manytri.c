@@ -124,10 +124,14 @@ void draw(unsigned int* temp_addr, float triangle[], float color[])
   float z[3] = {0.0, 0.0, 0.0};
   float w[3] = {1.0, 1.0, 1.0};
 
-  float r[3] = {color[0], color[0], color[0]};
-  float g[3] = {color[1], color[1], color[1]};
-  float b[3] = {color[2], color[2], color[2]};
+//  float r[3] = {color[0], color[0], color[0]};
+//  float g[3] = {color[1], color[1], color[1]};
+//  float b[3] = {color[2], color[2], color[2]};
   float a[3] = {0.0, 0.0, 0.0};
+
+  float r[3] = {1.0,0.0,0.0};
+  float g[3] = {0.0,1.0,0.0};
+  float b[3] = {0.0,0.0,1.0};
 
   int i;
   //Format is BGRXYZ
@@ -191,12 +195,14 @@ int main(int argc, char *argv[])
     return 0;
   }
 
-  ioctl(fd, VMODE, GRAPHICS_ON);
+  //ioctl(fd, VMODE, GRAPHICS_ON);
   
   //Calling BIND_DMA
   ret = ioctl(fd, BIND_DMA, &dma_addr);
   temp_addr = (unsigned int*)dma_addr;
   printf("DMA_ADDR2: %x   %p \n", temp_addr, temp_addr);
+
+  ioctl(fd, VMODE, GRAPHICS_ON);
 
   float i, j;
   float xscale = 0.0;
@@ -267,8 +273,9 @@ int main(int argc, char *argv[])
     printf("[USER] Unbinding DMA buffers :\n");
     ioctl(fd, UNBIND_DMA, &dma_addr);    
   }
+ 
   ioctl(fd, VMODE, GRAPHICS_OFF);
-  
+
   printf("[USER] Closing device : %s\n", DEVICE_FILE_NAME);
   close(fd);
 

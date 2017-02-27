@@ -135,6 +135,8 @@ int main(int argc, char *argv[])
   temp_addr = (unsigned int*)dma_addr;
   printf("DMA_ADDR2: %x   %p \n", temp_addr, temp_addr);
   
+  //ioctl(fd, VMODE, GRAPHICS_ON);
+  //sleep(2);
   for(i = 0; i < 1000; ++i)
   {
     //Writing dma header
@@ -160,7 +162,7 @@ int main(int argc, char *argv[])
     //ioctl(fd, FIFO_QUEUE, &entry);
   ioctl(fd, FIFO_FLUSH, 0);
 
-  sleep(3);
+  sleep(2);
   
   if(ret == 0){
     ioctl(fd, UNBIND_DMA, &dma_addr);    
