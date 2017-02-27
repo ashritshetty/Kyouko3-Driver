@@ -6,6 +6,7 @@
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 #include <signal.h>
+#include <time.h>
 
 #define DEVICE_FILE_NAME "/dev/kyouko3"
 
@@ -27,7 +28,6 @@
 #define KYOUKO3_CONTROL_SIZE 65536
 #define DEVICE_RAM 0x0020
 
-//Defines to keep track of graphic on/off
 #define GRAPHICS_ON 1
 #define GRAPHICS_OFF 0
 
@@ -74,36 +74,10 @@ void U_WRITE_FB(unsigned int reg, unsigned int value)
   *(kyouko3.u_frame_buffer+(reg)) = value;
 }
 
-void translate(float triangle[], float xscale, float yscale, float* rtriangle)
-{
-  rtriangle[0] = triangle[0] + xscale;
-  rtriangle[1] = triangle[1] + yscale;
-  rtriangle[2] = triangle[2] + xscale;
-  rtriangle[3] = triangle[3] + yscale;
-  rtriangle[4] = triangle[4] + xscale;
-  rtriangle[5] = triangle[5] + yscale;
-
- // return rtriangle;
-}
-
-void rotate(float triangle[], float sino, float* rtriangle)
-{
-  float coso = sqrt(1-(sino*sino));
-//  float rtriangle[6];
-  rtriangle[0] = triangle[0]*coso - triangle[1]*sino;
-  rtriangle[1] = triangle[0]*sino + triangle[1]*coso;
-  rtriangle[2] = triangle[2]*coso - triangle[3]*sino;
-  rtriangle[3] = triangle[2]*sino + triangle[3]*coso;
-  rtriangle[4] = triangle[4]*coso - triangle[5]*sino;
-  rtriangle[5] = triangle[4]*sino + triangle[5]*coso;
-
-//  return rtriangle;
-}
-
 void check(float triangle[], float* rtriangle)
 {
   int i;
-//  float rtriangle[6];
+
   for(i = 0; i < 6; i++)
   {
     if(triangle[i] < -1.0)
@@ -113,27 +87,22 @@ void check(float triangle[], float* rtriangle)
     else
       rtriangle[i] = triangle[i];
   }
-
-//  return rtriangle;
 }
 
 void draw(unsigned int* temp_addr, float triangle[], float color[])
 {
+  int i;
+
   float x[3] = {triangle[0], triangle[2], triangle[4]};
   float y[3] = {triangle[1], triangle[3], triangle[5]};
   float z[3] = {0.0, 0.0, 0.0};
   float w[3] = {1.0, 1.0, 1.0};
 
-//  float r[3] = {color[0], color[0], color[0]};
-//  float g[3] = {color[1], color[1], color[1]};
-//  float b[3] = {color[2], color[2], color[2]};
-  float a[3] = {0.0, 0.0, 0.0};
+  float r[3] = {color[0],0.0,0.0};
+  float g[3] = {0.0,color[1],0.0};
+  float b[3] = {0.0,0.0,color[2]};
+  float a[3] = {0.0,0.0,0.0};
 
-  float r[3] = {1.0,0.0,0.0};
-  float g[3] = {0.0,1.0,0.0};
-  float b[3] = {0.0,0.0,1.0};
-
-  int i;
   //Format is BGRXYZ
   for(i = 0; i < 3; i++)
   {
@@ -180,8 +149,6 @@ int main(int argc, char *argv[])
   struct fifo_entry entry;
   unsigned long dma_addr = 0;
   unsigned int* temp_addr;
-
-  //int factor = -1.0;
   
   k_dma_header.address = 0x1045;
   k_dma_header.count = 0x0003;
@@ -194,82 +161,63 @@ int main(int argc, char *argv[])
     printf("[USER] Cannot open device : %s\n", DEVICE_FILE_NAME);
     return 0;
   }
-
-  //ioctl(fd, VMODE, GRAPHICS_ON);
   
-  //Calling BIND_DMA
   ret = ioctl(fd, BIND_DMA, &dma_addr);
   temp_addr = (unsigned int*)dma_addr;
   printf("DMA_ADDR2: %x   %p \n", temp_addr, temp_addr);
 
   ioctl(fd, VMODE, GRAPHICS_ON);
 
-  float i, j;
-  float xscale = 0.0;
-  float yscale = 0.0;
-  float scale = 0.2; 
-  float dtriangle[6] = {-0.9, -1.0, -1.0, -0.8, -0.8, -0.8};
-  float color1[3] = {0.98, 0.698, 0.122};
+  int i;
+  float color[3];
+  float triangle[6];
   float rtriangle[6];
-  for(i = -1.0; i <= 1.0; i = i+scale)
+
+  int n = atoi(argv[1]);
+
+  srand(time(NULL));
+
+  for(i = 0; i < n; i = i++)
   {
-    //dtriangle[6] = {-0.9, -1.0, -1.0, -0.8, -0.8, -0.8};
-    xscale = 0.0;
-    for(j = -1.0; j <= 1.0; j = j+scale)
-    {
-      translate(dtriangle, xscale, yscale, rtriangle);
-      //rotate(rtriangle, j, rtriangle);
-      check(rtriangle, rtriangle);
+    float x1rand = (float)rand() / (float)RAND_MAX;
+    float y1rand = (float)rand() / (float)RAND_MAX;
+    float x2rand = (float)rand() / ((float)RAND_MAX*10);
+    float y2rand = (float)rand() / ((float)RAND_MAX*10);
+    float x3rand = (float)rand() / ((float)RAND_MAX*10);
+    float y3rand = (float)rand() / ((float)RAND_MAX*10);
 
-      *temp_addr = *(unsigned int*)&k_dma_header;
-      temp_addr++;
+    triangle[0] = -1.0 + (2*x1rand);
+    triangle[1] = -1.0 + (2*y1rand);
+    triangle[2] = triangle[0] + x2rand;
+    triangle[3] = triangle[1] + y2rand;
+    triangle[4] = triangle[0] + x3rand;
+    triangle[5] = triangle[1] + y3rand;
 
-      draw(temp_addr, rtriangle, color1);
-      dma_addr = 76;
-      ioctl(fd, START_DMA, &dma_addr);
-      temp_addr = (unsigned int*)dma_addr;
+    color[0] = (float)rand() / (float)RAND_MAX;
+    color[1] = (float)rand() / (float)RAND_MAX;
+    color[2] = (float)rand() / (float)RAND_MAX;
 
-      entry.cmd = FIFO_FLUSH_REG;
-      entry.value = 0;
-      ioctl(fd, FIFO_QUEUE, &entry);
-      xscale = xscale + scale;
-    }
-    yscale = yscale + scale;
+    check(triangle, rtriangle);
+
+    *temp_addr = *(unsigned int*)&k_dma_header;
+    temp_addr++;
+
+    draw(temp_addr, rtriangle, color);
+    dma_addr = 76;
+    ioctl(fd, START_DMA, &dma_addr);
+    temp_addr = (unsigned int*)dma_addr;
+
+    entry.cmd = FIFO_FLUSH_REG;
+    entry.value = 0;
+    ioctl(fd, FIFO_QUEUE, &entry);
   }
-  yscale = 0.0;
-  float itriangle[6] = {-0.8, -0.8, -0.9, -1.0, -0.7, -1.0};
-  float color2[3] = {0.988, 0.573, 0};
-  for(i = -1.0; i <= 1.0; i = i+scale)
-  {
-    //itriangle[6] = {-0.9, -1.0, -1.0, -0.8, -0.8, -0.8};
-    xscale = 0.0;
-    for(j = -1.0; j <= 1.0; j = j+scale)
-    {
-      translate(itriangle, xscale, yscale, rtriangle);
-      //rotate(rtriangle, j, rtriangle);
-      check(rtriangle, rtriangle);
-
-      *temp_addr = *(unsigned int*)&k_dma_header;
-      temp_addr++;
-
-      draw(temp_addr, rtriangle, color2);
-      dma_addr = 76;
-      ioctl(fd, START_DMA, &dma_addr);
-      temp_addr = (unsigned int*)dma_addr;
-
-      entry.cmd = FIFO_FLUSH_REG;
-      entry.value = 0;
-      ioctl(fd, FIFO_QUEUE, &entry);
-      xscale = xscale + scale;
-    }
-    yscale = yscale + scale;
-  }
-
+  
   ioctl(fd, FIFO_FLUSH, 0);
 
   sleep(3);
   
-  if(ret == 0){
+  if(ret == 0)
+  {
     printf("[USER] Unbinding DMA buffers :\n");
     ioctl(fd, UNBIND_DMA, &dma_addr);    
   }
