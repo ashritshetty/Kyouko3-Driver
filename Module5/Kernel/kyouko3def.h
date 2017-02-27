@@ -3,6 +3,30 @@
 
 #include <linux/ioctl.h>
 
+#define KYOUKO_MAJOR 500
+#define KYOUKO_MINOR 127
+
+#define CONTROL_SIZE 65536
+
+//Define FIFO_ENTRIES as there are 1024 according to notes
+#define FIFO_ENTRIES 1024
+
+//Defines to keep track of graphic on/off
+#define GRAPHICS_ON 1
+#define GRAPHICS_OFF 0
+
+#define CONFIG_ACC_DEF 0x80000000
+#define CONFIG_ACC_MASK 0x40000000
+#define CONFIG_MODE_SET_VAL 0
+#define FIFO_CLEAR_BUF_VAL 0x03
+#define FIFO_FLUSH_REG_VAL 0x0
+
+#define CONTROL_OFF 0
+#define FB_OFF 0x80000000
+
+#define NUM_DMA_BUF 8
+#define DMA_BUF_SIZE 126976u //1024*124 = (124K)
+
 #define PCI_VENDOR_ID_CCORSI 0x1234
 #define PCI_DEVICE_ID_CCORSI_KYOUKO3 0x1113
 #define DEVICE_RAM 0x0020
