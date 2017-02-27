@@ -181,9 +181,7 @@ int kyouko3_release(struct inode *inode, struct file *fp)
 int kyouko3_mmap(struct file *fp, struct vm_area_struct *vma)
 {
   int ret = -1;
-  //TODO: INCLUDE PROPER HEADER
-  //unsigned int uid = current->fsuid;
-  unsigned int uid = 0;	
+  unsigned int uid = current->cred->fsuid.val;	
   unsigned int offset;
   if (uid != 0){
       return ret;
