@@ -532,7 +532,7 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
            printk(KERN_ALERT "[KERNEL] In icotl - START_DMA count is %lu \n", count);
            
            if(count == 0)
-               return 0;
+               return -1;
 
            //local_irq_save(flags);
            spin_lock_irqsave(&mLock, flags);
