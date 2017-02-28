@@ -206,9 +206,9 @@ int main(int argc, char *argv[])
         color[2] = (float)rand() / (float)RAND_MAX;
 
         check(triangle, rtriangle);
-        printf("Temp addr before %p\n", temp_addr);
+        //printf("Temp addr before %p\n", temp_addr);
         draw(&temp_addr, rtriangle, color);    
-        printf("Temp addr after %p\n", temp_addr);
+        //printf("Temp addr after %p\n", temp_addr);
       }
       dma_addr = 72*5+4;
       ioctl(fd, START_DMA, &dma_addr);

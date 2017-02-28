@@ -320,17 +320,23 @@ irqreturn_t dma_intr(int irq, void *dev_id, struct pt_regs *regs)
   if(kyouko3.isQueueFull == 1)  //
   {
       kyouko3.isQueueFull = 0;
+      spin_unlock_irqrestore(&mLock, flags);
       if(kyouko3.suspend_state == 2){
+        printk(KERN_ALERT "Wakeup call in state 2\n");  
         wake_up_interruptible(&dma_snooze);
       }
   }
-  spin_unlock_irqrestore(&mLock, flags);
+  else
+  {
+    spin_unlock_irqrestore(&mLock, flags);
+  }
   
   if(kyouko3.dma_fill != kyouko3.dma_drain)
   {
       drainDMA(dma_buf[kyouko3.dma_drain].count);
   }
   else if(kyouko3.suspend_state == 3){
+      printk(KERN_ALERT "Wakeup call in state 3\n");  
       wake_up_interruptible(&dma_snooze);
   }
 
@@ -412,8 +418,10 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
           spin_unlock_irqrestore(&mLock, flags);
           
           if(kyouko3.suspend_state == 3){
+              printk(KERN_ALERT "Suspend call in state 3\n");  
               wait_event_interruptible(dma_snooze, (kyouko3.dma_fill == kyouko3.dma_drain && kyouko3.isQueueFull == 0));
 
+              printk(KERN_ALERT "Got up from state 3\n");  
               spin_lock_irqsave(&mLock, flags);
               kyouko3.suspend_state = 0;
               spin_unlock_irqrestore(&mLock, flags);
@@ -469,8 +477,11 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
            if(kyouko3.suspend_state == 1)
            {
                kyouko3.suspend_state = 2;
+               
+               printk(KERN_ALERT "Suspend call in state 2\n");  
                wait_event_interruptible(dma_snooze, ((kyouko3.dma_fill != kyouko3.dma_drain) || 
                                                      ((kyouko3.dma_fill == kyouko3.dma_drain) && kyouko3.isQueueFull == 0)));
+               printk(KERN_ALERT "Got up from state 2\n");  
                kyouko3.suspend_state = 0;
            }
            
