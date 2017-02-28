@@ -103,30 +103,30 @@ void draw(unsigned int* temp_addr, float triangle[], float color[])
   float a[3] = {0.0,0.0,0.0};
 
   //Format is BGRXYZ
-  for(i = 0; i < 3; i++)
+  for(i = 0; i < 9; i++)
   {
     //Writing blue color
-    *temp_addr = *(unsigned int*)&b[i];
+    *temp_addr = *(unsigned int*)&b[i%3];
     temp_addr++;
 
     //Writing green color
-    *temp_addr = *(unsigned int*)&g[i];
+    *temp_addr = *(unsigned int*)&g[i%3];
     temp_addr++;
 
     //Writing red color
-    *temp_addr = *(unsigned int*)&r[i];
+    *temp_addr = *(unsigned int*)&r[i%3];
     temp_addr++;
 
     //Writing X-coord
-    *temp_addr = *(unsigned int*)&x[i];
+    *temp_addr = *(unsigned int*)&x[i%3];
     temp_addr++;
 
     //Writing Y-coord
-    *temp_addr = *(unsigned int*)&y[i];
+    *temp_addr = *(unsigned int*)&y[i%3];
     temp_addr++;
 
     //Writing Z-coord
-    *temp_addr = *(unsigned int*)&z[i];
+    *temp_addr = *(unsigned int*)&z[i%3];
     temp_addr++;
   }
 }
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
   n = atoi(argv[1]);
   
   k_dma_header.address = 0x1045;
-  k_dma_header.count = 0x0003;
+  k_dma_header.count = 0x0009;
   k_dma_header.opCode = 0x0014;
 
   printf("[USER] Opening device : %s\n", DEVICE_FILE_NAME);

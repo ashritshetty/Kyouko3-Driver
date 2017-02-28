@@ -88,7 +88,7 @@ void check(float triangle[], float* rtriangle)
   }
 }
 
-void draw(unsigned int* temp_addr, float triangle[], float color[])
+void draw(unsigned int** temp_addr, float triangle[], float color[])
 {
   int i;
 
@@ -106,28 +106,28 @@ void draw(unsigned int* temp_addr, float triangle[], float color[])
   for(i = 0; i < 3; i++)
   {
     //Writing blue color
-    *temp_addr = *(unsigned int*)&b[i];
-    temp_addr++;
+    **temp_addr = *(unsigned int*)&b[i];
+    (*temp_addr)++;
 
     //Writing green color
-    *temp_addr = *(unsigned int*)&g[i];
-    temp_addr++;
+    **temp_addr = *(unsigned int*)&g[i];
+    (*temp_addr)++;
 
     //Writing red color
-    *temp_addr = *(unsigned int*)&r[i];
-    temp_addr++;
+    **temp_addr = *(unsigned int*)&r[i];
+    (*temp_addr)++;
 
     //Writing X-coord
-    *temp_addr = *(unsigned int*)&x[i];
-    temp_addr++;
+    **temp_addr = *(unsigned int*)&x[i];
+    (*temp_addr)++;
 
     //Writing Y-coord
-    *temp_addr = *(unsigned int*)&y[i];
-    temp_addr++;
+    **temp_addr = *(unsigned int*)&y[i];
+    (*temp_addr)++;
 
     //Writing Z-coord
-    *temp_addr = *(unsigned int*)&z[i];
-    temp_addr++;
+    **temp_addr = *(unsigned int*)&z[i];
+    (*temp_addr)++;
   }
 }
 
@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
     return 0;
   }
 
-  int ret, i, n;
+  int ret, i, j, n;
   unsigned int RAM_SIZE;
   unsigned int* temp_addr;
   unsigned long dma_addr = 0;
@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
   n = atoi(argv[1]);
   
   k_dma_header.address = 0x1045;
-  k_dma_header.count = 0x005a;
+  k_dma_header.count = 0x000f;
   k_dma_header.opCode = 0x0014;
 
   printf("[USER] Opening device : %s\n", DEVICE_FILE_NAME);
@@ -181,9 +181,11 @@ int main(int argc, char *argv[])
 
   srand(time(NULL));
 
-  for(i = 0; i < n; i=i+30)
+  for(i = 0; i < n; i++)
   {
-      for(j = 0; j < 30; j++)
+      *temp_addr = *(unsigned int*)&k_dma_header;
+      temp_addr++;
+      for(j = 0; j < 5; j++)
       {
         float x1rand = (float)rand() / (float)RAND_MAX;
         float y1rand = (float)rand() / (float)RAND_MAX;
@@ -204,13 +206,11 @@ int main(int argc, char *argv[])
         color[2] = (float)rand() / (float)RAND_MAX;
 
         check(triangle, rtriangle);
-
-        *temp_addr = *(unsigned int*)&k_dma_header;
-        temp_addr++;
-
-        draw(temp_addr, rtriangle, color);    
+        printf("Temp addr before %p\n", temp_addr);
+        draw(&temp_addr, rtriangle, color);    
+        printf("Temp addr after %p\n", temp_addr);
       }
-      dma_addr = 76;
+      dma_addr = 72*5+4;
       ioctl(fd, START_DMA, &dma_addr);
       temp_addr = (unsigned int*)dma_addr;
 
