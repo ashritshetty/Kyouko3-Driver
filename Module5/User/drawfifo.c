@@ -30,6 +30,8 @@ void U_WRITE_FB(unsigned int reg, unsigned int value)
   *(kyouko3.u_frame_buffer+(reg)) = value;
 }
 
+static int fd;
+
 void intHandler(int signum)
 {
   printf("[USER] Clearing FIFO Queue\n");
@@ -51,7 +53,6 @@ void set_intHandler()
 
 int main(int argc, char *argv[])
 {
-  int fd;
   int ret, i;
   unsigned int RAM_SIZE;
   struct fifo_entry entry;
