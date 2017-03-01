@@ -4,6 +4,7 @@
 #include <math.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
+#include <signal.h>
 #include "../Kernel/kyouko3def.h"
 
 #define DEVICE_FILE_NAME "/dev/kyouko3"
