@@ -8,6 +8,8 @@ LDFLAGS =
 DMAEXEC = drawdma
 FIFOEXEC = drawfifo
 
+all: $(DMAEXEC) $(FIFOEXEC)
+
 ${DMAEXEC}: drawdma.o
 	${CC} drawdma.c -lm -o ${DMAEXEC}
 
