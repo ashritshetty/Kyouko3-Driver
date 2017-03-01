@@ -7,31 +7,13 @@
 #include <sys/ioctl.h>
 #include <signal.h>
 #include <time.h>
+#include "../Kernel/kyouko3def.h"
 
 #define DEVICE_FILE_NAME "/dev/kyouko3"
 
-#define VMODE _IOW(0xcc, 0, unsigned long)
-#define BIND_DMA _IOW(0xcc, 1, unsigned long)
-#define START_DMA _IOWR(0xcc, 2, unsigned long)
-#define FIFO_QUEUE _IOWR(0xcc, 3, unsigned long)
-#define FIFO_FLUSH _IO(0xcc, 4)
-#define UNBIND_DMA _IOW(0xcc, 5, unsigned long)
-
-#define FIFO_FLUSH_REG 0x3ffc
-
-#define RASTER_PRIMITIVE 0x3000
-#define RASTER_EMIT 0x3004
-
-#define VERTEX_COORD 0x5000
-#define VERTEX_COLOR 0x5010
-
-#define KYOUKO3_CONTROL_SIZE 65536
-#define DEVICE_RAM 0x0020
-
-#define GRAPHICS_ON 1
-#define GRAPHICS_OFF 0
-
-#define DMA_HEADER_SZ 0x00000004
+#define DMA_HEADER_SZ 4
+#define NUM_TRI_IN_BUF 4
+#define TRI_SIZE_BYTES 72
 
 static int fd;
 
@@ -141,8 +123,6 @@ void set_intHandler()
 
 int main(int argc, char *argv[])
 {
-  set_intHandler();
- 
   if(argc != 2)
   {
     printf("[USER] Usage : ./mycode <number of triangles> \n");
@@ -150,7 +130,6 @@ int main(int argc, char *argv[])
   }
 
   int ret, i, j, n;
-  unsigned int RAM_SIZE;
   unsigned int* temp_addr;
   unsigned long dma_addr = 0;
   struct fifo_entry entry;
@@ -160,9 +139,11 @@ int main(int argc, char *argv[])
   float rtriangle[6];
 
   n = atoi(argv[1]);
+
+  set_intHandler();
   
   k_dma_header.address = 0x1045;
-  k_dma_header.count = 0x000f;
+  k_dma_header.count = (3*NUM_TRI_IN_BUF); //0x000f
   k_dma_header.opCode = 0x0014;
 
   printf("[USER] Opening device : %s\n", DEVICE_FILE_NAME);
@@ -174,9 +155,11 @@ int main(int argc, char *argv[])
   }
   
   ret = ioctl(fd, BIND_DMA, &dma_addr);
+  if(ret != 0){
+    printf("[USER] Bind DMA failed\n");
+    return 0;
+  }
   temp_addr = (unsigned int*)dma_addr;
-  printf("[USER] DMA_ADDR2: %x   %p \n", temp_addr, temp_addr);
-
   ioctl(fd, VMODE, GRAPHICS_ON);
 
   srand(time(NULL));
@@ -185,7 +168,7 @@ int main(int argc, char *argv[])
   {
       *temp_addr = *(unsigned int*)&k_dma_header;
       temp_addr++;
-      for(j = 0; j < 5; j++)
+      for(j = 0; j < NUM_TRI_IN_BUF; j++)
       {
         float x1rand = (float)rand() / (float)RAND_MAX;
         float y1rand = (float)rand() / (float)RAND_MAX;
@@ -206,28 +189,29 @@ int main(int argc, char *argv[])
         color[2] = (float)rand() / (float)RAND_MAX;
 
         check(triangle, rtriangle);
-        //printf("Temp addr before %p\n", temp_addr);
         draw(&temp_addr, rtriangle, color);    
-        //printf("Temp addr after %p\n", temp_addr);
       }
-      dma_addr = 72*5+4;
-      ioctl(fd, START_DMA, &dma_addr);
-      temp_addr = (unsigned int*)dma_addr;
-
+      
+      dma_addr = TRI_SIZE_BYTES * NUM_TRI_IN_BUF + DMA_HEADER_SZ;
+      ret = ioctl(fd, START_DMA, &dma_addr);
+      
       entry.cmd = FIFO_FLUSH_REG;
       entry.value = 0;
       ioctl(fd, FIFO_QUEUE, &entry);
+      
+      if(ret != 0){
+          printf("[USER] START DMA failed\n");
+          break;
+      }
+
+      temp_addr = (unsigned int*)dma_addr;  
   }
-  
   ioctl(fd, FIFO_FLUSH, 0);
 
   sleep(3);
   
-  if(ret == 0)
-  {
-    printf("[USER] Unbinding DMA buffers \n");
-    ioctl(fd, UNBIND_DMA, &dma_addr);    
-  }
+  printf("[USER] Unbinding DMA buffers \n");
+  ioctl(fd, UNBIND_DMA, &dma_addr);    
  
   ioctl(fd, VMODE, GRAPHICS_OFF);
 
