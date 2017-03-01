@@ -108,6 +108,23 @@ struct pci_device_id kyouko3_dev_ids[] = {
   {0}
 };
 
+struct pci_driver kyouko3_pci_drv = {
+  .name = "KYOUKO3",
+  .id_table = kyouko3_dev_ids,
+  .probe = kyouko3_probe,
+  .remove = kyouko3_remove
+};
+
+struct file_operations kyouko3_fops = {
+  .open = kyouko3_open,
+  .release = kyouko3_release,
+  .mmap = kyouko3_mmap,
+  .unlocked_ioctl = kyouko3_ioctl,
+  .owner = THIS_MODULE
+};
+
+struct cdev kyouko3_cdev;
+
 unsigned int K_READ_REG(unsigned int reg)
 {
   unsigned int value;
@@ -380,7 +397,6 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
               dma_buf[i].k_base = pci_alloc_consistent(kyouko3.kyouko3_pci_dev, DMA_BUF_SIZE, &dma_buf[i].p_base);
               kyouko3.curr_dma_mmap_index = i;
               dma_buf[i].u_base = vm_mmap(fp, 0, DMA_BUF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, 0x10000000);
-              //TODO: Handle the failure cases of above calls
           }
          
           ret = copy_to_user((void __user*)arg, &(dma_buf[0].u_base), sizeof(unsigned long));
@@ -390,7 +406,6 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
           if(ret != 0)
           {
             printk(KERN_ALERT "[KERNEL] Error enabling message signaled interrupts\n");
-            //TODO: USE ENUM: Returning error msg
             return -1;
           }
           ret = request_irq(kyouko3.kyouko3_pci_dev->irq, (irq_handler_t)dma_intr, IRQF_SHARED, "dma_intr", &kyouko3);
@@ -398,7 +413,6 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
           {
             pci_disable_msi(kyouko3.kyouko3_pci_dev);
             printk(KERN_ALERT "[KERNEL] IRQ request failed\n");
-            //TODO: USE ENUM: Returning error msg
             return -1;
           }
           K_WRITE_REG(INTR_SET, 0x02);
@@ -491,23 +505,6 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
   }
   return 0;
 }
-
-struct pci_driver kyouko3_pci_drv = {
-  .name = "KYOUKO3",
-  .id_table = kyouko3_dev_ids,
-  .probe = kyouko3_probe,
-  .remove = kyouko3_remove
-};
-
-struct file_operations kyouko3_fops = {
-  .open = kyouko3_open,
-  .release = kyouko3_release,
-  .mmap = kyouko3_mmap,
-  .unlocked_ioctl = kyouko3_ioctl,
-  .owner = THIS_MODULE
-};
-
-struct cdev kyouko3_cdev;
 
 int my_init_function(void)
 {
