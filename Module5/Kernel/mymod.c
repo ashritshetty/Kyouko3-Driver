@@ -108,23 +108,6 @@ struct pci_device_id kyouko3_dev_ids[] = {
   {0}
 };
 
-struct pci_driver kyouko3_pci_drv = {
-  .name = "KYOUKO3",
-  .id_table = kyouko3_dev_ids,
-  .probe = kyouko3_probe,
-  .remove = kyouko3_remove
-};
-
-struct file_operations kyouko3_fops = {
-  .open = kyouko3_open,
-  .release = kyouko3_release,
-  .mmap = kyouko3_mmap,
-  .unlocked_ioctl = kyouko3_ioctl,
-  .owner = THIS_MODULE
-};
-
-struct cdev kyouko3_cdev;
-
 unsigned int K_READ_REG(unsigned int reg)
 {
   unsigned int value;
@@ -505,6 +488,23 @@ long kyouko3_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
   }
   return 0;
 }
+
+struct pci_driver kyouko3_pci_drv = {
+  .name = "KYOUKO3",
+  .id_table = kyouko3_dev_ids,
+  .probe = kyouko3_probe,
+  .remove = kyouko3_remove
+};
+
+struct file_operations kyouko3_fops = {
+  .open = kyouko3_open,
+  .release = kyouko3_release,
+  .mmap = kyouko3_mmap,
+  .unlocked_ioctl = kyouko3_ioctl,
+  .owner = THIS_MODULE
+};
+
+struct cdev kyouko3_cdev;
 
 int my_init_function(void)
 {
